@@ -1,0 +1,2535 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E6E8E5">
+<meta name="color-scheme" content="light">
+<title>Jot</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#E6E8E5; --surface:#F6F7F5; --line:#D3D7D0; --ink:#20261F; --muted:#697165;
+  --green:#2E7A46; --green-ink:#1E5A31; --green-soft:#D6E9DA; --danger:#A3392E;
+  --event:#D9C49A; --event-soft:#F3ECDD; --event-line:#DCCBA8; --event-ink:#6A5329;
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color:var(--ink); background:var(--bg);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--bg);-webkit-tap-highlight-color:transparent}
+body{min-height:100dvh}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.wrap{max-width:680px;margin:0 auto}
+
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:14px 16px 6px}
+.top{display:flex;align-items:center;gap:6px}
+h1{flex:1;min-width:0;margin:0;font-size:1.65rem;font-weight:700;letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.icon-btn{flex:none;width:42px;height:42px;border:0;border-radius:12px;background:transparent;color:var(--muted);font-size:1.35rem;line-height:1}
+.icon-btn:active{background:var(--line)}
+.icon-btn:disabled{opacity:.3}
+.sub-head{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:.9rem;margin-top:2px}
+.streak{color:var(--green-ink);font-weight:650}
+
+main{padding:6px 12px 160px}
+ul{list-style:none;margin:0;padding:0}
+
+/* ---------- Today ---------- */
+.slots{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.slot{display:flex;align-items:stretch;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 12px 12px 14px}
+.slot.is-done{background:#fff;border-color:#B9D2BF}
+.slot-main{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.slot-when{font-size:.84rem;color:var(--muted)}
+.slot-task{border:0;background:none;text-align:left;padding:4px 0;font-size:1.08rem;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.slot-task.empty-task{color:var(--green-ink);font-weight:600}
+.slot-note{font-size:.8rem;color:var(--muted)}
+.slot.is-done .slot-task{color:var(--muted)}
+
+.breaker{flex:none;align-self:center;width:54px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 0;border:1px solid var(--line);border-radius:9px;background:#EDEFEC}
+.breaker:disabled{opacity:.45}
+.bk-slot{position:relative;width:20px;height:30px;border-radius:5px;background:#C7CCC4;box-shadow:inset 0 1px 3px rgba(20,30,20,.25)}
+.bk-handle{position:absolute;left:2px;right:2px;bottom:2px;height:13px;border-radius:3px;background:#8C9489;box-shadow:0 1px 1px rgba(0,0,0,.2);transition:bottom .15s,background .15s}
+.breaker[aria-checked="true"] .bk-handle{bottom:15px;background:var(--green)}
+.bk-lbl{font-size:.58rem;color:var(--muted);line-height:1}
+.breaker[aria-checked="true"] .bk-on{color:var(--green-ink);font-weight:700}
+.breaker[aria-checked="false"] .bk-off{color:var(--ink);font-weight:700}
+
+.catchup{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;background:var(--green-soft);border-radius:12px;padding:10px 12px;color:var(--green-ink);font-size:.92rem}
+.catchup button{flex:none;border:0;border-radius:9px;background:var(--green);color:#fff;font-weight:600;padding:8px 12px}
+.progress-line{margin:14px 4px 0;color:var(--muted);font-size:.9rem}
+.grid-wrap{margin-top:22px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.grid-wrap h2{margin:0 0 10px;font-size:1rem}
+.grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.cell{aspect-ratio:1;border:0;border-radius:6px;background:#DDE1DB;position:relative;padding:0;font-size:.62rem;color:transparent}
+.cell.today{box-shadow:inset 0 0 0 2px var(--ink)}
+.cell.sel{outline:2px solid var(--green);outline-offset:1px}
+.grid-key{display:flex;justify-content:space-between;margin-top:8px;font-size:.78rem;color:var(--muted)}
+.key-sw{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--event);margin-right:5px;vertical-align:-1px}
+.event-banner{display:block;width:100%;text-align:left;margin-top:6px;border:1px solid var(--event-line);border-radius:12px;background:var(--event-soft);padding:10px 14px;color:var(--event-ink)}
+.event-banner b{display:block;font-size:1.02rem;color:var(--ink)}
+.event-banner span{font-size:.84rem}
+.ev-list{margin-top:6px}
+.ev-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;padding:10px 2px;font-size:.95rem}
+.ev-row:first-child{border-top:0}
+.ev-when{flex:none;color:var(--muted);font-size:.82rem;text-align:right}
+.chk{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:.92rem}
+.chk input{flex:none;width:18px;height:18px;margin:0;accent-color:var(--green)}
+.btn.ghost.del{color:var(--danger)}
+
+/* ---------- Notes ---------- */
+.chips{display:flex;gap:8px;overflow-x:auto;padding:10px 0 6px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 14px;font-size:.93rem}
+.chip .n{margin-left:7px;color:var(--muted);font-variant-numeric:tabular-nums}
+.chip[aria-pressed="true"]{background:var(--green);border-color:var(--green);color:#fff}
+.chip[aria-pressed="true"] .n{color:#CBE4D1}
+.chip.add{background:transparent;border-style:dashed;border-color:#A9B3A5;color:var(--green-ink)}
+.list{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.item{border-top:1px solid var(--line)}
+.item:first-child{border-top:0}
+.item.open{background:#fff}
+.row{display:flex;align-items:flex-start;padding:2px 6px 2px 2px}
+.check{flex:none;width:44px;height:44px;border:0;background:none;display:grid;place-items:center;padding:0}
+.check::before{content:"";width:21px;height:21px;border-radius:7px;border:2px solid #9AA395;background:#fff;transition:background .15s,border-color .15s}
+.done > .row .check::before,.sub.done .check::before{
+  background:var(--green) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3.2 3L15 7' fill='none' stroke='white' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/15px no-repeat;
+  border-color:var(--green)}
+.check.sm{width:36px;height:36px}
+.check.sm::before{width:17px;height:17px;border-radius:5px}
+.sub.done .check.sm::before{background-size:12px}
+.open-btn{flex:1;min-width:0;border:0;background:none;text-align:left;padding:11px 4px 11px 2px}
+.t{display:block;font-size:1rem;line-height:1.38;overflow-wrap:anywhere}
+.done .t{color:var(--muted);text-decoration:line-through}
+.meta{display:flex;align-items:center;gap:10px;margin-top:4px;font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog{width:38px;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--green)}
+.on-day{color:var(--green-ink)}
+.detail{padding:0 14px 14px 46px}
+.field{display:block;width:100%;border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:10px 12px;font-size:.98rem}
+.field:focus,.sub-add input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft);background:#fff}
+.title-in{font-weight:600}
+textarea.field{margin-top:8px;resize:vertical;min-height:84px;line-height:1.45}
+.subs{margin-top:10px}
+.sub{display:flex;align-items:center;margin-left:-8px}
+.sub-in{flex:1;min-width:0;border:0;border-bottom:1px solid transparent;background:none;padding:8px 2px;font-size:.95rem}
+.sub-in:focus{outline:none;border-bottom-color:var(--green)}
+.sub.done .sub-in{color:var(--muted);text-decoration:line-through}
+.x{flex:none;width:36px;height:36px;border:0;background:none;color:var(--muted);font-size:1.25rem}
+.plan-x{display:grid;place-items:center;color:var(--green)}
+.row-plan{width:40px;height:44px}
+.sub-add{display:flex;gap:6px;margin-top:6px}
+.sub-add input{flex:1;min-width:0;border:1px dashed #A9B3A5;border-radius:10px;background:transparent;padding:9px 12px;font-size:.95rem}
+.sub-add button{border:0;border-radius:10px;background:var(--green-soft);color:var(--green-ink);font-weight:600;padding:0 14px}
+.actions{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;font-size:.9rem;color:var(--muted)}
+.actions select{margin-left:6px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:6px 8px;max-width:150px}
+.soft-btn{border:0;border-radius:10px;background:var(--green-soft);color:var(--green-ink);font-weight:600;padding:8px 12px}
+.danger-btn{border:0;background:none;color:var(--danger);font-weight:600;padding:8px 4px}
+.section-toggle{display:block;margin:16px 4px 8px;border:0;background:none;color:var(--green-ink);font-weight:600;padding:6px 0}
+.clear-done{display:block;margin:10px auto 0;border:0;background:none;color:var(--muted);font-size:.88rem;padding:8px}
+.empty{text-align:center;color:var(--muted);padding:56px 24px;line-height:1.55}
+.empty.small{padding:28px 24px}
+
+/* ---------- bottom ---------- */
+.bottom{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--bg);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.quick{padding:10px 12px 4px}
+.quick form{display:flex;gap:8px;max-width:680px;margin:0 auto}
+.quick input{flex:1;min-width:0;height:48px;border:1.5px solid var(--line);border-radius:14px;background:#fff;padding:0 15px;font-size:1rem}
+.quick input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px var(--green-soft)}
+.quick button{height:48px;border:0;border-radius:14px;background:var(--green);color:#fff;font-weight:650;padding:0 20px}
+.tabs{display:flex;max-width:680px;margin:0 auto;padding:4px 8px 6px;gap:4px}
+.tab{flex:1;min-width:0;border:0;background:none;border-radius:12px;padding:10px 0;font-weight:600;font-size:.84rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--green-ink);box-shadow:inset 0 0 0 1px var(--line)}
+
+/* ---------- dialogs ---------- */
+dialog{border:0;border-radius:18px;padding:20px;width:min(94vw,420px);max-height:86dvh;background:var(--surface);color:var(--ink);box-shadow:0 10px 40px rgba(20,30,20,.25)}
+dialog::backdrop{background:rgba(32,38,31,.35)}
+dialog h2{margin:0 0 6px;font-size:1.15rem}
+dialog p{margin:0 0 4px;color:var(--muted);line-height:1.45;overflow-wrap:anywhere}
+dialog .field{margin-top:12px}
+.btns{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.btns .cancel{order:-1}
+.btn{border:0;border-radius:11px;padding:10px 16px;font-weight:600;background:var(--green);color:#fff}
+.btn.ghost{background:transparent;color:var(--muted)}
+.btn.danger{background:var(--danger)}
+.menu-list{display:flex;flex-direction:column;margin-top:8px}
+.menu-list button{border:0;background:none;text-align:left;padding:13px 4px;font-size:1rem;border-top:1px solid var(--line)}
+.menu-list button:first-child{border-top:0}
+.menu-list .danger-text{color:var(--danger)}
+.menu-list .close{color:var(--muted);text-align:center;margin-top:6px}
+.menu-list small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
+
+#pick{padding:0}
+.pick-head{position:sticky;top:0;background:var(--surface);padding:18px 18px 12px;border-bottom:1px solid var(--line);z-index:1}
+.pick-row{display:flex;gap:8px;margin-top:10px}
+.pick-row input{flex:1;min-width:0;border:1px solid var(--line);border-radius:10px;background:#fff;padding:9px 12px}
+.pick-row select{border:1px solid var(--line);border-radius:10px;background:#fff;padding:8px}
+.surprise{flex:1;border:1.5px dashed var(--green);border-radius:10px;background:transparent;color:var(--green-ink);font-weight:650;padding:9px}
+.pick-body{padding:4px 18px 18px}
+.pick-body h3{margin:16px 0 6px;font-size:.88rem;color:var(--muted);font-weight:600}
+.opts{display:flex;flex-wrap:wrap;gap:6px}
+.opt{border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 11px;text-align:left;font-size:.93rem}
+.opt small{display:block;color:var(--muted);font-size:.75rem}
+.opt-sub{background:var(--surface);border-style:dashed}
+.lists-h{margin-top:22px!important;padding-top:12px;border-top:1px solid var(--line);color:var(--ink)!important}
+.opt.cur{border-color:var(--green);box-shadow:inset 0 0 0 1px var(--green)}
+.pick-foot{display:flex;gap:8px;justify-content:space-between;flex-wrap:wrap;margin-top:18px}
+
+#lists textarea{min-height:46dvh;font-size:.9rem;line-height:1.5}
+.seg{display:flex;gap:4px;margin-top:10px;background:#E9EBE8;border-radius:10px;padding:3px}
+.seg button{flex:1;border:0;border-radius:8px;background:none;padding:7px 4px;font-size:.85rem;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--ink);font-weight:600}
+
+/* ---------- extra slots, goals, workouts, standards ---------- */
+.add-slot{display:block;width:100%;margin-top:10px;border:1.5px dashed #A9B3A5;border-radius:14px;background:transparent;color:var(--green-ink);font-weight:600;padding:11px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-top:10px}
+.card h2{margin:0;font-size:1rem}
+.bar{display:block;height:10px;border-radius:5px;background:var(--line);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--green);border-radius:5px}
+.bar.thin{height:5px;margin-top:6px}
+.goal-strip{display:block;width:100%;text-align:left;margin-top:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 12px;font-size:.88rem}
+.gs-top{display:flex;justify-content:space-between;gap:10px;color:var(--muted)}
+.gs-top b{color:var(--ink)}
+.goal-top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.countdown{margin:8px 0 0;color:var(--muted);font-size:.95rem}
+.countdown b{font-size:2.3rem;color:var(--ink);font-weight:700;letter-spacing:-.02em;margin-right:7px;font-variant-numeric:tabular-nums}
+.goal-meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:.86rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.goal-meta b{color:var(--ink)}
+.goal-pace{margin:4px 0 0;font-size:.82rem;color:var(--green-ink)}
+.goal-detail{margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}
+.gs-sub{display:block;margin-top:4px;font-size:.8rem;color:var(--muted)}
+.trk{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.trk-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.trk-name{font-weight:650}
+.trk-val{color:var(--muted);font-size:.88rem;font-variant-numeric:tabular-nums;text-align:right}
+.trk .btn-row{margin-top:10px}
+.trk-edit{margin-top:14px;padding:10px 12px 12px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.trk-edit .trk-top{align-items:center}
+.trk-kind{font-size:.78rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--green-ink)}
+.trk-edit .lbl{margin-top:2px}
+.trk-preset{margin-top:10px}
+.pill.on{background:var(--green);border-color:var(--green);color:#fff}
+.dots{display:flex;gap:6px;margin-top:10px}
+.dot{flex:1;max-width:44px;aspect-ratio:1;border:1px solid var(--line);border-radius:50%;background:#fff;color:var(--muted);font-weight:600;font-size:.85rem;padding:0}
+.dot.today{border-color:var(--ink)}
+.dot.on{background:var(--green);border-color:var(--green);color:#fff}
+.dot:disabled{opacity:.35}
+.btn-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:.88rem}
+.pill.green{background:var(--green-soft);border-color:transparent;color:var(--green-ink);font-weight:600}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.form-grid .full{grid-column:1/-1}
+.form-grid .btn-row{margin-top:0}
+.lbl{display:block;font-size:.8rem;color:var(--muted);margin-top:10px}
+.lbl .field{margin-top:4px;color:var(--ink)}
+.mini-h{margin:16px 0 4px;font-size:.84rem;color:var(--muted);font-weight:600}
+.muted-p{margin:4px 0;color:var(--muted);font-size:.9rem}
+.log-list li{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line);padding:2px 0}
+.log-list li:first-child{border-top:0}
+.log-list input{flex:1;min-width:0;border:0;background:none;padding:8px 0;font-size:.92rem}
+.log-h{font-weight:600;font-variant-numeric:tabular-nums}
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.stat-row b{display:block;font-size:1.35rem;font-variant-numeric:tabular-nums}
+.stat-row span{font-size:.8rem;color:var(--muted)}
+.type-row{display:grid;grid-template-columns:7.5em 1fr auto;align-items:center;gap:10px;margin-top:6px;font-size:.88rem}
+.type-row .bar{margin:0;height:6px}
+.type-row span:last-child{color:var(--muted);font-variant-numeric:tabular-nums}
+.day-h{margin:18px 4px 6px;font-size:.85rem;color:var(--muted);font-weight:600}
+.wk-row{display:flex;align-items:center;gap:8px;padding:8px 4px 8px 14px;border-top:1px solid var(--line)}
+.wk-row:first-child{border-top:0}
+.wk-main{flex:1;min-width:0}
+.wk-type{display:block;font-weight:600}
+.wk-sub{display:block;font-size:.82rem;color:var(--muted);overflow-wrap:anywhere}
+.wk-mins{color:var(--green-ink);font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.doc-open{padding-left:14px}
+.doc-open .meta{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-detail{padding-left:14px}
+.doc-opts{display:flex;gap:8px;align-items:center;margin-top:8px}
+.doc-opts select{flex:none;width:auto;padding:7px 8px}
+.doc-opts .seg{flex:1;margin-top:0}
+textarea.doc-body{min-height:220px}
+.order-list{margin-top:10px}
+.order-list li{display:flex;align-items:center;gap:4px;border-top:1px solid var(--line);padding:3px 0}
+.order-list li:first-child{border-top:0}
+.order-list span{flex:1;min-width:0;overflow-wrap:anywhere}
+.x:disabled{opacity:.25}
+
+/* ---------- more, car, projects, businesses, voice ---------- */
+.hub-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:10px;border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:14px}
+.chev{flex:none;color:var(--muted);font-size:1.3rem}
+.lrow{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;padding:10px 2px}
+.lrows{margin-top:8px}
+.lrows .lrow:first-child{border-top:0}
+.lr-main{flex:1;min-width:0;overflow-wrap:anywhere}
+.lr-main b{display:block;font-weight:600}
+.lr-main small,.row-open small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
+.hub-row b{font-size:1.05rem}
+.lr-val{flex:none;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap}
+.lr-val.in{color:var(--green-ink)}
+.due-over{color:var(--danger)!important}
+.due-soon{color:#8A5A00!important}
+.tag{flex:none;border-radius:999px;background:var(--green-soft);color:var(--green-ink);font-size:.75rem;font-weight:650;padding:3px 9px;white-space:nowrap}
+.tag.grey{background:#E3E6E1;color:var(--muted)}
+.pcard{display:block;width:100%;text-align:left}
+.pc-name{font-size:1.02rem;overflow-wrap:anywhere}
+.pc-due{flex:none;font-size:.82rem;color:var(--muted)}
+.odo{margin:6px 0 0;font-size:2rem;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.odo small{font-size:.95rem;font-weight:500;color:var(--muted);margin-left:6px}
+.sub-add .amt{flex:none;width:86px}
+.row-open{flex:1;min-width:0;border:0;background:none;text-align:left;padding:8px 2px;overflow-wrap:anywhere}
+.row-open b{font-weight:600}
+.sub.done .row-open b{color:var(--muted);text-decoration:line-through}
+.log-d{flex:none;min-width:4.2em;color:var(--muted);font-size:.82rem}
+.log-t{flex:1;min-width:0;padding:8px 0;font-size:.92rem;overflow-wrap:anywhere}
+.log-t small{display:block;color:var(--muted)}
+.card textarea.field{min-height:70px}
+#form .form-grid{margin-top:4px}
+.quick .mic{flex:none;width:48px;padding:0;display:grid;place-items:center;background:var(--green-soft);color:var(--green-ink)}
+#voice textarea{min-height:120px}
+.voice-status{display:flex;align-items:center;gap:8px}
+.pulse{flex:none;width:10px;height:10px;border-radius:50%;background:#A9B3A5}
+.pulse.on{background:var(--danger);animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.voice-title{margin-top:10px!important;font-size:.9rem}
+.voice-title b{color:var(--ink)}
+
+.toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);opacity:0;
+  background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:.92rem;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;max-width:90vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Today -->
+<section id="v-today">
+  <header><div class="wrap">
+    <div class="top">
+      <button class="icon-btn" data-act="day-prev" aria-label="Previous day">‹</button>
+      <h1 id="day-title">Today</h1>
+      <button class="icon-btn" data-act="day-next" aria-label="Next day">›</button>
+      <button class="icon-btn" data-act="today-menu" aria-label="Options">⋯</button>
+    </div>
+    <div class="sub-head"><span id="day-date"></span><span class="streak" id="streak"></span></div>
+  </div></header>
+  <main><div class="wrap" id="today"></div></main>
+</section>
+
+<!-- Notes -->
+<section id="v-notes" hidden>
+  <header><div class="wrap">
+    <div class="top">
+      <h1 id="title">Inbox</h1>
+      <button class="icon-btn" data-act="menu" aria-label="Project options">⋯</button>
+    </div>
+    <nav class="chips" id="chips" aria-label="Projects"></nav>
+  </div></header>
+  <main><div class="wrap" id="main"></div></main>
+</section>
+
+<!-- Workouts -->
+<section id="v-work" hidden>
+  <header><div class="wrap"><div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Workouts</h1></div></div></header>
+  <main><div class="wrap" id="work"></div></main>
+</section>
+
+<!-- Goals -->
+<section id="v-goals" hidden>
+  <header><div class="wrap"><div class="top"><h1>Goals</h1></div></div></header>
+  <main><div class="wrap" id="goals"></div></main>
+</section>
+
+<!-- Standards -->
+<section id="v-docs" hidden>
+  <header><div class="wrap">
+    <div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Standards</h1></div>
+    <nav class="chips" id="doc-chips" aria-label="Categories"></nav>
+  </div></header>
+  <main><div class="wrap" id="docs"></div></main>
+</section>
+
+<!-- Projects and businesses -->
+<section id="v-build" hidden>
+  <header><div class="wrap">
+    <div class="top"><button class="icon-btn" id="build-back" data-act="b-back" aria-label="Back to the list" hidden>‹</button><h1 id="build-title">Projects</h1></div>
+    <div class="seg" id="build-seg"></div>
+  </div></header>
+  <main><div class="wrap" id="build"></div></main>
+</section>
+
+<!-- More -->
+<section id="v-more" hidden>
+  <header><div class="wrap"><div class="top"><h1>More</h1></div></div></header>
+  <main><div class="wrap" id="more"></div></main>
+</section>
+
+<!-- Car -->
+<section id="v-car" hidden>
+  <header><div class="wrap">
+    <div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Car</h1><button class="icon-btn" data-act="c-menu" aria-label="Vehicle options">⋯</button></div>
+    <nav class="chips" id="car-chips" aria-label="Vehicles"></nav>
+  </div></header>
+  <main><div class="wrap" id="car"></div></main>
+</section>
+
+<div class="bottom">
+  <div class="quick" id="quick-wrap" hidden>
+    <form id="quick" autocomplete="off">
+      <input id="q" enterkeyhint="send" aria-label="Add a note" placeholder="Add to Inbox">
+      <button type="button" class="mic" data-act="v-open" aria-label="Dictate a note" title="Dictate a note"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg></button>
+      <button type="submit">Add</button>
+    </form>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" data-tab="today">Daily</button>
+    <button class="tab" role="tab" data-tab="notes">Notes</button>
+    <button class="tab" role="tab" data-tab="build">Projects</button>
+    <button class="tab" role="tab" data-tab="goals">Goals</button>
+    <button class="tab" role="tab" data-tab="more">More</button>
+  </nav>
+</div>
+
+<dialog id="form"><form method="dialog" autocomplete="off">
+  <h2 id="form-title"></h2><p id="form-body"></p>
+  <div class="form-grid" id="form-fields"></div>
+  <div class="btns">
+    <button class="btn" value="ok" id="form-ok">Save</button>
+    <button class="btn ghost del" value="delete" id="form-del" formnovalidate>Delete</button>
+    <button class="btn ghost cancel" value="cancel" formnovalidate>Cancel</button>
+  </div>
+</form></dialog>
+
+<dialog id="cloud-dialog" aria-labelledby="cloud-title">
+  <h2 id="cloud-title">Cloud backup</h2>
+  <p id="cloud-status" role="status"></p>
+  <form id="cloud-login" hidden>
+    <label class="lbl">Supabase project URL<input class="field" name="url" type="url" placeholder="https://your-project.supabase.co" required></label>
+    <label class="lbl">Supabase publishable key<input class="field" name="key" autocomplete="off" required></label>
+    <label class="lbl">Email<input class="field" name="email" type="email" autocomplete="username" required></label>
+    <label class="lbl">Password<input class="field" name="password" type="password" autocomplete="current-password" required></label>
+    <div class="btn-row"><button class="btn" type="submit">Sign in</button></div>
+  </form>
+  <div id="cloud-conflict" hidden>
+    <p>Both copies have changes. Choose which copy to keep. Export this device’s copy first if you want to keep it as a separate file.</p>
+    <div class="btn-row">
+      <button class="pill" data-act="m-export">Export this device’s copy</button>
+      <button class="pill" id="cloud-keep">Keep this device’s copy</button>
+      <button class="pill" id="cloud-use">Use cloud copy</button>
+    </div>
+  </div>
+  <div class="btns">
+    <button class="btn ghost" id="cloud-logout" hidden>Disconnect</button>
+    <button class="btn" id="cloud-sync" hidden>Sync now</button>
+    <form method="dialog"><button class="btn ghost">Close</button></form>
+  </div>
+</dialog>
+
+<dialog id="voice">
+  <h2>Voice note</h2>
+  <p class="voice-status"><i class="pulse" id="voice-pulse"></i><span id="voice-status"></span></p>
+  <button class="pill" id="voice-download" hidden>Download offline dictation</button>
+  <textarea class="field" id="voice-text" aria-label="What you said" placeholder="Your words show up here. You can fix them before saving."></textarea>
+  <p class="voice-title" id="voice-title-row">Title: <b id="voice-title"></b></p>
+  <div class="btns">
+    <button class="btn" data-act="v-save">Save note</button>
+    <button class="btn ghost" data-act="v-mic" id="voice-mic">Keep talking</button>
+    <button class="btn ghost cancel" data-act="v-cancel">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="ask"><form method="dialog">
+  <h2></h2><p></p>
+  <input class="field" aria-label="Name">
+  <div class="btns">
+    <button class="btn ok" value="ok">OK</button>
+    <button class="btn ghost cancel" value="cancel">Cancel</button>
+  </div>
+</form></dialog>
+
+<dialog id="menu"><form method="dialog">
+  <h2 id="menu-title"></h2>
+  <div class="menu-list" id="menu-list"></div>
+</form></dialog>
+
+<dialog id="pick">
+  <div class="pick-head">
+    <h2 id="pick-title"></h2>
+    <div class="pick-row">
+      <input id="pick-custom" placeholder="Type your own" aria-label="Type your own task" enterkeyhint="done">
+      <button class="btn" data-act="pick-custom">Use</button>
+    </div>
+    <div class="pick-row">
+      <button class="surprise" data-act="pick-surprise">Surprise me</button>
+      <select id="pick-rep" aria-label="Repeat">
+        <option value="0">Just this day</option>
+        <option value="1">Every day</option>
+        <option value="2">Every 2 days</option>
+        <option value="3">Every 3 days</option>
+        <option value="7">Every week</option>
+        <option value="14">Every 2 weeks</option>
+      </select>
+    </div>
+  </div>
+  <div class="pick-body" id="pick-body"></div>
+</dialog>
+
+<dialog id="lists">
+  <h2>Edit task lists</h2>
+  <p>One task per line. Start a line with # to make a category.</p>
+  <div class="seg" id="lists-seg"></div>
+  <textarea class="field" id="lists-text" aria-label="Task list"></textarea>
+  <div class="btns">
+    <button class="btn" data-act="lists-save">Save lists</button>
+    <button class="btn ghost" data-act="lists-reset">Restore defaults</button>
+    <button class="btn ghost cancel" data-act="lists-close">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="event"><form method="dialog" autocomplete="off">
+  <h2 id="ev-head">All-day event</h2>
+  <input class="field" id="ev-name" placeholder="e.g. Deer hunting, Thanksgiving" aria-label="Event name">
+  <div class="form-grid">
+    <label class="lbl">Starts<input class="field" type="date" id="ev-start"></label>
+    <label class="lbl">Ends<input class="field" type="date" id="ev-end"></label>
+  </div>
+  <label class="chk"><input type="checkbox" id="ev-pause"> Pause daily tasks (your streak won't break)</label>
+  <label class="chk"><input type="checkbox" id="ev-yearly"> Repeats every year</label>
+  <div class="btns">
+    <button class="btn" value="ok">Save</button>
+    <button class="btn ghost del" value="delete" id="ev-del">Delete</button>
+    <button class="btn ghost cancel" value="cancel">Cancel</button>
+  </div>
+</form></dialog>
+
+<dialog id="order">
+  <h2>Reorder projects</h2>
+  <ul class="order-list" id="order-list"></ul>
+  <div class="btns"><button class="btn" data-act="order-done">Done</button></div>
+</dialog>
+
+<input type="file" id="file" accept="application/json,.json" hidden>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+const KEY = 'jot-daily.v1';
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---------- dates ---------- */
+const pad = n => String(n).padStart(2, '0');
+const dkey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parse = k => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return dkey(d); };
+const diffDays = (a, b) => Math.round((Date.UTC(...b.split('-').map((v, i) => i === 1 ? v - 1 : +v)) - Date.UTC(...a.split('-').map((v, i) => i === 1 ? v - 1 : +v))) / 864e5);
+const todayKey = () => dkey(new Date());
+const isWeekend = k => [0, 6].includes(parse(k).getDay());
+
+/* ---------- daily slots ---------- */
+const WEEKDAY = [
+  { key: 'am', when: 'Morning', menu: 'morning' },
+  { key: 'pmBig', when: 'Evening, big one', menu: 'eveBig' },
+  { key: 'pmSmall', when: 'Evening, small one', menu: 'eveSmall' }
+];
+const WEEKEND = [
+  { key: 'am', when: 'Morning', menu: 'morning' },
+  { key: 'wkBig', when: 'Daytime, big one', menu: 'eveBig' },
+  { key: 'pmBig', when: 'Evening, big two', menu: 'eveBig' },
+  { key: 'pmSmall', when: 'Evening, small one', menu: 'eveSmall' }
+];
+// a day can hide default slots (_hide) and add extra ones (_extra)
+function slotsFor(k) {
+  const d = S.days[k] || {}, hide = d._hide || [];
+  const base = (isWeekend(k) ? WEEKEND : WEEKDAY).filter(s => !hide.includes(s.key));
+  return base.concat((d._extra || []).map(key => ({ key, when: 'Extra task', menu: 'all', extra: true })));
+}
+function addExtra(k) {
+  const key = 'x' + uid();
+  ((S.days[k] ??= {})._extra ??= []).push(key);
+  return key;
+}
+function removeSlot(k, slotKey) {
+  const d = S.days[k] ??= {};
+  if (d._extra?.includes(slotKey)) d._extra = d._extra.filter(x => x !== slotKey);
+  else (d._hide ??= []).push(slotKey);
+  delete d[slotKey];
+}
+const MENU_NAMES = { morning: 'Morning', eveSmall: 'Evening small', eveBig: 'Big tasks' };
+const LIST_TABS = { ...MENU_NAMES, custom: 'Your tasks' };
+// extra slots pick from every list, merged by category name
+function menuCats(m) {
+  if (m !== 'all') return S.menus[m] || [];
+  const out = [];
+  for (const c of Object.values(S.menus).flat()) {
+    const hit = out.find(o => o.name === c.name);
+    if (hit) hit.tasks.push(...c.tasks.filter(t => !hit.tasks.includes(t)));
+    else out.push({ name: c.name, tasks: [...c.tasks] });
+  }
+  return out;
+}
+
+const DEFAULT_MENUS = {
+  morning: [
+    { name: 'Body', tasks: ['10 min stretch', 'Kettlebell swings (5 min)', 'Push-ups and rows'] },
+    { name: 'Mind', tasks: ['FE flashcards (10 min)', 'Read 10 pages', 'Plan the day'] },
+    { name: 'Home', tasks: ['Make the bed and tidy', 'Prep lunch'] },
+    { name: 'Outside', tasks: ['Walk outside'] },
+    { name: 'Faith', tasks: ['Morning prayer (5 min)', 'Read one scripture passage', 'Pray on the drive to work'] }
+  ],
+  eveSmall: [
+    { name: 'Study', tasks: ['FE practice: 5 problems', 'NEC: read one article'] },
+    { name: 'Home', tasks: ['Kitchen reset', "Lay out tomorrow's stuff"] },
+    { name: 'Connect', tasks: ['Call or text family', 'Text a friend'] },
+    { name: 'Plan', tasks: ['Plan a weekend trip', 'Scout a hunting or fishing spot on maps', 'Gear check and repair'] },
+    { name: 'Faith', tasks: ['Evening prayer before bed', 'Gratitude journal (3 things)', 'Devotional reading'] }
+  ],
+  eveBig: [
+    { name: 'Study', tasks: ['FE practice problems (1 hr)', 'FE review: one handbook topic', 'NEC study for the master exam', 'PTW / SKM practice on a sample study'] },
+    { name: 'Build', tasks: ['Stenlund project work (1 hr)', 'Project Raptor build session', 'CapitolWatch update or bug fix', 'SS Woodworks: build planter boxes', 'Woodworking project'] },
+    { name: 'Together', tasks: ['Date', 'Hang out with girl'] },
+    { name: 'Move', tasks: ['Bike ride', 'Long workout or run'] },
+    { name: 'Home', tasks: ['Deep clean or big chore'] },
+    { name: 'Trips', tasks: ['Plan a road trip', 'Plan a backpacking or climbing trip', 'Plan a hunting or fishing trip'] },
+    { name: 'Faith', tasks: ['Attend a service or small group', 'Bible or scripture study (1 hr)', 'Volunteer or serve someone'] }
+  ]
+};
+
+/* ---------- goal trackers ---------- */
+const FE_TOPICS = ['Mathematics', 'Probability and statistics', 'Ethics and professional practice', 'Engineering economics',
+  'Properties of electrical materials', 'Circuit analysis (DC and AC)', 'Linear systems', 'Signal processing', 'Electronics',
+  'Power systems', 'Electromagnetics', 'Control systems', 'Communications', 'Computer networks', 'Digital systems',
+  'Computer systems', 'Software engineering'];
+const TRACK_KINDS = {
+  checklist: { label: 'Checklist', sub: 'Topics or milestones to finish', name: 'Topics' },
+  count: { label: 'Count', sub: 'Practice problems, chapters, flashcards', name: 'Practice problems', unit: 'problems', target: 500 },
+  score: { label: 'Score', sub: 'Practice exam results against a passing mark', name: 'Practice exam score', unit: '%', target: 70 },
+  days: { label: 'Consistency', sub: 'Days a week you put in work', name: 'Study days', target: 5 },
+  hours: { label: 'Time', sub: 'Hours logged toward a target', name: 'Study time' }
+};
+const TARGET_LABEL = { hours: 'Target hours', count: 'Target', score: 'Passing score', days: 'Days per week' };
+const newTracker = (kind, extra = {}) => ({ id: uid(), kind, name: TRACK_KINDS[kind].name, unit: TRACK_KINDS[kind].unit || '',
+  target: TRACK_KINDS[kind].target || 0, log: [], items: [], ...extra });
+const feItems = () => FE_TOPICS.map(text => ({ id: uid(), text, done: false }));
+const feGoal = () => ({ id: 'fe', name: 'FE exam', date: '', trackers: [
+  newTracker('checklist', { name: 'Exam topics', items: feItems() }),
+  newTracker('count'), newTracker('score'), newTracker('days')
+] });
+// goals used to have a single hours target; turn that into an hours tracker
+function migrateGoals() {
+  S.goals = (S.goals || []).map(g => {
+    if (g.trackers) return g;
+    if (g.id === 'fe' && !(g.log || []).length) return { ...feGoal(), date: g.date || '' };
+    return { id: g.id, name: g.name, date: g.date || '', trackers: [newTracker('hours', {
+      target: g.target || 0, log: (g.log || []).map(l => ({ id: l.id, date: l.date, v: l.hours, created: l.created })) })] };
+  });
+}
+
+/* ---------- state ---------- */
+const fresh = () => ({
+  projects: [{ id: 'inbox', name: 'Inbox', items: [] }], current: 'inbox', showDone: false,
+  days: {}, repeats: [], menus: JSON.parse(JSON.stringify(DEFAULT_MENUS)), tab: 'today',
+  custom: [], workouts: [], docs: [], docCat: 'all', events: [],
+  car: { vehicles: [], cur: null }, pm: [], biz: [], buildSeg: 'pm',
+  goals: [feGoal()]
+});
+let localVersion = { revision: null, owner: null, base: null, synced: null, attempt: null };
+let cloud = null;
+const deviceFields = ['current', 'showDone', 'tab', 'docCat', 'buildSeg'];
+function cloudData(state) {
+  const data = { ...state, car: { ...state.car } };
+  for (const key of deviceFields) delete data[key];
+  delete data.car.cur;
+  return data;
+}
+function newRevision() {
+  if (crypto.randomUUID) return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 15) | 64;
+  bytes[8] = (bytes[8] & 63) | 128;
+  const pairs = Array.from(bytes, byte => byte.toString(16).padStart(2, '0'));
+  return [pairs.slice(0, 4), pairs.slice(4, 6), pairs.slice(6, 8), pairs.slice(8, 10), pairs.slice(10)]
+    .map(group => group.join('')).join('-');
+}
+let lastLocalWrite = null;
+let S = load();
+let lastLocalData = JSON.stringify(cloudData(S));
+let open = null, openGoal = null, openDoc = null, viewDay = todayKey(), pickCtx = null, listsMenu = 'morning', listsDraft = null;
+
+function load() {
+  try {
+    lastLocalWrite = localStorage.getItem(KEY);
+    const data = JSON.parse(lastLocalWrite);
+    if (data && Array.isArray(data.projects) && data.projects.length) {
+      const { _jotCloud, ...state } = data;
+      Object.assign(localVersion, _jotCloud || { revision: newRevision() });
+      return Object.assign(fresh(), state);
+    }
+  } catch (e) {}
+  return fresh();
+}
+function writeLocal(state, version) {
+  try {
+    const serialized = JSON.stringify({ ...state, _jotCloud: version });
+    if (localStorage.getItem(KEY) !== lastLocalWrite) {
+      toast('Jot changed in another tab. Export any unsaved edits here, then reopen this tab.');
+      return false;
+    }
+    if (serialized !== lastLocalWrite) localStorage.setItem(KEY, serialized);
+    lastLocalWrite = serialized;
+    return true;
+  } catch (e) {
+    toast('Could not save on this device. Check available browser storage.');
+    return false;
+  }
+}
+function save() {
+  const data = JSON.stringify(cloudData(S));
+  const changed = data !== lastLocalData;
+  const version = changed ? { ...localVersion, revision: newRevision() } : localVersion;
+  if (!writeLocal(S, version)) return false;
+  localVersion = version;
+  lastLocalData = data;
+  if (changed) cloud?.changed();
+  return true;
+}
+
+function proj(id = S.current) { return S.projects.find(p => p.id === id) || S.projects[0]; }
+function findItem(id) {
+  for (const p of S.projects) { const it = p.items.find(i => i.id === id); if (it) return { p, it }; }
+  // tracked projects and businesses have steps (subs) that can be planned into a day like note subtasks
+  for (const [kind, name] of [['pm', 'Projects'], ['biz', 'Businesses']]) {
+    const it = S[kind].find(i => i.id === id); if (it) return { p: { name, virtual: kind }, it };
+  }
+  return {};
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function ask({ title, body = '', input = null, placeholder = '', ok = 'OK', danger = false }) {
+  const d = $('#ask');
+  d.querySelector('h2').textContent = title;
+  const p = d.querySelector('p'); p.textContent = body; p.hidden = !body;
+  const inp = d.querySelector('input'); inp.hidden = input === null; inp.value = input ?? ''; inp.placeholder = placeholder;
+  const okb = d.querySelector('.ok'); okb.textContent = ok; okb.classList.toggle('danger', danger);
+  d.returnValue = ''; d.showModal();
+  if (input !== null) setTimeout(() => { inp.focus(); inp.select(); }, 60);
+  return new Promise(res => d.addEventListener('close', () => {
+    if (d.returnValue !== 'ok') return res(null);
+    res(input === null ? true : (inp.value.trim() || null));
+  }, { once: true }));
+}
+
+function menu(title, options) {
+  $('#menu-title').textContent = title;
+  $('#menu-list').innerHTML = options.map(o =>
+    `<button value="${o.value}" class="${o.danger ? 'danger-text' : ''}">${esc(o.label)}${o.sub ? `<small>${esc(o.sub)}</small>` : ''}</button>`
+  ).join('') + `<button value="" class="close">Close</button>`;
+  const d = $('#menu'); d.returnValue = ''; d.showModal();
+  return new Promise(res => d.addEventListener('close', () => res(d.returnValue || null), { once: true }));
+}
+
+/* ---------- daily logic ---------- */
+function repeatFor(k, slotKey) {
+  return S.repeats.find(r => r.slot === slotKey && k >= r.start && (!r.end || k <= r.end) && diffDays(r.start, k) % r.every === 0);
+}
+function getSlot(k, slotKey) {
+  const e = S.days[k]?.[slotKey];
+  if (e) return e;
+  const r = repeatFor(k, slotKey);
+  return r ? { task: r.task, done: false, repeat: r.id } : { task: '', done: false };
+}
+function setSlot(k, slotKey, entry) { (S.days[k] ??= {})[slotKey] = entry; }
+/* ---------- all-day events ---------- */
+const shiftYears = (k, n) => `${+k.slice(0, 4) + n}${k.slice(4)}`;
+// the occurrence of ev that covers day k, if any (yearly events shift by whole years)
+function occurrenceOn(ev, k) {
+  if (!ev.yearly) return ev.start <= k && k <= ev.end ? { start: ev.start, end: ev.end } : null;
+  const y = +k.slice(0, 4) - +ev.start.slice(0, 4);
+  for (const n of [y, y - 1]) {
+    if (n < 0) continue;
+    const start = shiftYears(ev.start, n), end = shiftYears(ev.end, n);
+    if (start <= k && k <= end) return { start, end };
+  }
+  return null;
+}
+function nextOccurrence(ev, from) {
+  if (!ev.yearly) return ev.end >= from ? { start: ev.start, end: ev.end } : null;
+  for (let n = Math.max(0, +from.slice(0, 4) - +ev.start.slice(0, 4) - 1); ; n++) {
+    const start = shiftYears(ev.start, n), end = shiftYears(ev.end, n);
+    if (end >= from) return { start, end };
+  }
+}
+const eventsOn = k => S.events.map(ev => ({ ev, occ: occurrenceOn(ev, k) })).filter(x => x.occ);
+const fmtDay = k => parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+const fmtRange = o => o.start === o.end ? parse(o.start).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : `${fmtDay(o.start)} – ${fmtDay(o.end)}`;
+
+function dayStats(k) {
+  const slots = slotsFor(k);
+  const done = slots.filter(s => { const e = getSlot(k, s.key); return e.task && e.done; }).length;
+  // a paused event day with nothing planned is a day off: it neither counts nor breaks the streak
+  const off = eventsOn(k).some(x => x.ev.pause) && !slots.some(s => getSlot(k, s.key).task);
+  return { done, total: slots.length, off };
+}
+function streak() {
+  let n = 0, k = todayKey();
+  const s0 = dayStats(k);
+  if (!s0.off && s0.done === s0.total) n++;
+  for (let i = 0; i < 3650; i++) {
+    k = addDays(k, -1);
+    const s = dayStats(k);
+    if (s.off) continue;
+    if (s.done !== s.total) break;
+    n++;
+  }
+  return n;
+}
+function assign(k, slotKey, task, noteId, every, subId) {
+  const entry = { task, done: false };
+  if (noteId) entry.noteId = noteId;
+  if (subId) entry.subId = subId;
+  if (every > 0) {
+    S.repeats.forEach(r => { if (r.slot === slotKey && !r.end) r.end = addDays(k, -1); });
+    S.repeats.push({ id: uid(), slot: slotKey, task, every, start: k });
+    if (S.days[k]) delete S.days[k][slotKey];
+    // wipe explicit future entries so the repeat shows through
+    Object.keys(S.days).forEach(d => { if (d > k && S.days[d][slotKey] && !S.days[d][slotKey].done) delete S.days[d][slotKey]; });
+  } else setSlot(k, slotKey, entry);
+}
+function linkedDays(noteId) {
+  const out = [];
+  for (const [k, d] of Object.entries(S.days)) for (const e of Object.values(d)) if (e?.noteId === noteId) { out.push(k); break; }
+  return out.sort();
+}
+
+/* ---------- render: today ---------- */
+function dayLabel(k) {
+  const t = todayKey(), d = diffDays(t, k);
+  if (d === 0) return 'Today';
+  if (d === 1) return 'Tomorrow';
+  if (d === -1) return 'Yesterday';
+  return parse(k).toLocaleDateString(undefined, { weekday: 'long' });
+}
+function renderToday() {
+  const k = viewDay;
+  $('#day-title').textContent = dayLabel(k);
+  $('#day-date').textContent = parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  const st = streak();
+  $('#streak').textContent = st ? `${st}-day streak` : '';
+
+  let h = '';
+  const t0 = todayKey(), y = addDays(t0, -1);
+  if (k === t0) {
+    const ys = dayStats(y), planned = slotsFor(y).some(s => getSlot(y, s.key).task);
+    if (planned && ys.done < ys.total && !S.days[y]?._reviewed)
+      h += `<div class="catchup"><span>Yesterday: ${ys.done} of ${ys.total} marked</span><button data-act="goto" data-day="${y}">Mark yesterday</button></div>`;
+  } else if (k < t0) {
+    h += `<div class="catchup"><span>You're looking at ${dayLabel(k).toLowerCase() === 'yesterday' ? 'yesterday' : parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span><button data-act="goto" data-day="${t0}">Back to today</button></div>`;
+  }
+  const evs = eventsOn(k), ds = dayStats(k);
+  for (const { ev, occ } of evs) {
+    const len = diffDays(occ.start, occ.end) + 1;
+    const info = [len > 1 ? `Day ${diffDays(occ.start, k) + 1} of ${len}` : 'All day', ev.pause ? 'Tasks paused' : ''].filter(Boolean).join(' · ');
+    h += `<button class="event-banner" data-act="ev-edit" data-ev="${ev.id}"><b>${esc(ev.title)}</b><span>${info}</span></button>`;
+  }
+  const hideSlots = ds.off && !S.days[k]?._show;
+  if (hideSlots) h += `<button class="add-slot" data-act="ev-show">Plan tasks anyway</button>`;
+  h += `<div class="slots"${hideSlots ? ' hidden' : ''}>`;
+  for (const s of slotsFor(k)) {
+    const e = getSlot(k, s.key);
+    const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
+    let note = '';
+    if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : `From ${p.name}`; }
+    else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
+    h += `<section class="slot${e.task && e.done ? ' is-done' : ''}">
+      <div class="slot-main">
+        <span class="slot-when">${s.when}</span>
+        <button class="slot-task${e.task ? '' : ' empty-task'}" data-act="pick" data-slot="${s.key}">${e.task ? esc(e.task) : 'Pick a task'}</button>
+        ${note ? `<span class="slot-note">${esc(note)}</span>` : ''}
+      </div>
+      <button class="breaker" role="switch" aria-checked="${!!(e.task && e.done)}" data-act="flip" data-slot="${s.key}" aria-label="${s.when} task complete"${e.task ? '' : ' disabled'}>
+        <span class="bk-lbl bk-on">Complete</span><span class="bk-slot"><span class="bk-handle"></span></span><span class="bk-lbl bk-off">Not</span>
+      </button>
+    </section>`;
+  }
+  h += `</div>`;
+  if (!hideSlots) h += `<button class="add-slot" data-act="slot-add">+ Add a task</button>`;
+  h += `<p class="progress-line">${ds.off ? 'Day off. Your streak is safe.' : ds.done === ds.total ? 'All done. Nice work.' : `${ds.done} of ${ds.total} done`}</p>`;
+
+  const due = carAlerts();
+  if (due.length) h += `<button class="goal-strip" data-tab="car"><span class="gs-top"><b>${esc(due[0].v.name)}</b><span>${due.length} due</span></span>
+    <span class="gs-sub ${due[0].d.state === 'over' ? 'due-over' : 'due-soon'}">${esc(due[0].it.name)} · ${esc(dueText(due[0].d).toLowerCase())}</span></button>`;
+
+  for (const g of S.goals) {
+    const t = g.trackers.find(x => trackStats(x).pct !== null), st = t && trackStats(t);
+    if (!g.date && !t) continue;
+    const days = g.date ? diffDays(todayKey(), g.date) : null;
+    const left = days > 0 ? `${days} day${days === 1 ? '' : 's'} left` : days === 0 ? 'Today' : '';
+    h += `<button class="goal-strip" data-tab="goals"><span class="gs-top"><b>${esc(g.name)}</b><span>${left}</span></span>
+      ${t ? `<span class="gs-sub">${esc(t.name)} · ${esc(st.summary)}</span><span class="bar thin"><i style="width:${st.pct}%"></i></span>` : ''}</button>`;
+  }
+
+  // upcoming and ongoing events
+  const t = todayKey();
+  const up = S.events.map(ev => ({ ev, occ: nextOccurrence(ev, t) })).filter(x => x.occ && diffDays(t, x.occ.start) <= 120)
+    .sort((a, b) => a.occ.start.localeCompare(b.occ.start)).slice(0, 6);
+  h += `<div class="grid-wrap"><div class="goal-top"><h2>Events</h2><button class="soft-btn" data-act="ev-new">+ Event</button></div>`;
+  h += up.length ? `<div class="ev-list">${up.map(({ ev, occ }) => {
+    const n = diffDays(t, occ.start);
+    const when = n <= 0 ? `Now, until ${fmtDay(occ.end)}` : `${fmtRange(occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
+    return `<button class="ev-row" data-act="ev-edit" data-ev="${ev.id}"><span>${esc(ev.title)}</span><span class="ev-when">${when}</span></button>`;
+  }).join('')}</div>` : `<p class="muted-p">Hunting trips, holidays, anything that takes the whole day.</p>`;
+  h += `</div>`;
+
+  // 28-day grid ending today
+  h += `<div class="grid-wrap"><h2>Last 4 weeks</h2><div class="grid">`;
+  for (let i = 27; i >= 0; i--) {
+    const c = addDays(t, -i), s = dayStats(c), f = s.done / s.total;
+    const bg = s.off ? 'var(--event)' : f === 0 ? '#DDE1DB' : `color-mix(in srgb, var(--green) ${Math.round(25 + f * 75)}%, #DDE1DB)`;
+    const lbl = s.off ? eventsOn(c).map(x => x.ev.title).join(', ') : `${s.done} of ${s.total}`;
+    h += `<button class="cell${c === t ? ' today' : ''}${c === k ? ' sel' : ''}" style="background:${bg}" data-act="goto" data-day="${c}" aria-label="${parse(c).toDateString()}: ${esc(lbl)}">${s.done}</button>`;
+  }
+  h += `</div><div class="grid-key"><span>4 weeks ago</span><span><i class="key-sw"></i>Event day</span><span>Today</span></div></div>`;
+  $('#today').innerHTML = h;
+}
+
+/* ---------- picker ---------- */
+function openPicker(k, slotKey) {
+  const slot = slotsFor(k).find(s => s.key === slotKey);
+  pickCtx = { k, slotKey, menu: slot.menu, extra: !!slot.extra };
+  const cur = getSlot(k, slotKey);
+  $('#pick-title').textContent = `${slot.when}, ${dayLabel(k).toLowerCase() === 'today' ? 'today' : dayLabel(k)}`;
+  $('#pick-custom').value = '';
+  const rep = cur.repeat && S.repeats.find(r => r.id === cur.repeat);
+  $('#pick-rep').value = rep ? String(rep.every) : '0';
+  $('#pick-rep').hidden = !!slot.extra;
+
+  let h = '';
+  if (S.custom.length) {
+    h += `<h3>Your tasks</h3><div class="opts">` + S.custom.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+  }
+  for (const p of S.projects) {
+    const open = p.items.filter(i => !i.done);
+    if (!open.length) continue;
+    h += `<h3>${esc(p.name)} notes</h3><div class="opts">`;
+    for (const i of open.slice(0, 30)) {
+      h += `<button class="opt${cur.noteId === i.id && !cur.subId ? ' cur' : ''}" data-act="pick-note" data-id="${i.id}">${esc(i.text)}${i.subs.length ? `<small>${i.subs.filter(x => !x.done).length} steps left</small>` : ''}</button>`;
+      for (const sb of i.subs.filter(x => !x.done))
+        h += `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${i.id}" data-sub="${sb.id}">${esc(sb.text)}<small>Step of ${esc(i.text)}</small></button>`;
+    }
+    h += `</div>`;
+  }
+  for (const [kind, label] of [['pm', 'project'], ['biz', 'business']]) for (const x of S[kind]) {
+    if (kind === 'pm' ? x.status !== 'active' : x.stage === 'paused') continue;
+    const todo = x.subs.filter(s => !s.done).slice(0, 5);
+    if (!todo.length) continue;
+    h += `<h3>${esc(x.text)} (${label})</h3><div class="opts">` + todo.map(sb =>
+      `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${x.id}" data-sub="${sb.id}">${esc(sb.text)}</button>`).join('') + `</div>`;
+  }
+  if (h) h += `<h3 class="lists-h">Standard task lists</h3>`;
+  for (const cat of menuCats(slot.menu)) {
+    if (!cat.tasks.length) continue;
+    h += `<h3>${esc(cat.name)}</h3><div class="opts">` + cat.tasks.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+  }
+  h += `<div class="pick-foot">`;
+  if (cur.task) h += `<button class="btn ghost" data-act="pick-clear">Clear this day</button>`;
+  if (rep) h += `<button class="btn ghost" data-act="pick-stop">Stop repeating</button>`;
+  if (slotsFor(k).length > 1) h += `<button class="btn ghost" data-act="slot-remove">Remove this slot</button>`;
+  h += `<button class="btn ghost" data-act="pick-close">Close</button></div>`;
+  $('#pick-body').innerHTML = h;
+  $('#pick').showModal();
+  $('#pick-body').scrollTop = 0;
+}
+function applyPick(task, noteId, subId) {
+  if (!pickCtx || !task) return;
+  assign(pickCtx.k, pickCtx.slotKey, task, noteId, noteId || pickCtx.extra ? 0 : +$('#pick-rep').value, subId);
+  $('#pick').close(); save(); renderAll();
+}
+// typed tasks are remembered and shown first next time
+function pickCustom(task) {
+  if (!task) return;
+  S.custom = [task, ...S.custom.filter(t => t !== task)].slice(0, 15);
+  applyPick(task);
+}
+
+/* ---------- render: notes ---------- */
+const CAL = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13.5v4M10 15.5h4"/></svg>`;
+function itemHTML(i) {
+  const isOpen = open === i.id;
+  const sd = i.subs.filter(s => s.done).length;
+  let meta = '';
+  if (i.subs.length) meta += `<span class="prog"><i style="width:${Math.round(sd / i.subs.length * 100)}%"></i></span><span>${sd}/${i.subs.length}</span>`;
+  if (i.note && i.note.trim()) meta += `<span>Has notes</span>`;
+  const days = linkedDays(i.id).filter(d => d >= todayKey());
+  if (days.length && !i.done) meta += `<span class="on-day">Planned ${dayLabel(days[0]).toLowerCase() === 'today' ? 'today' : 'for ' + dayLabel(days[0])}</span>`;
+  return `<li class="item${i.done ? ' done' : ''}${isOpen ? ' open' : ''}" data-id="${i.id}">
+    <div class="row">
+      <button class="check" data-act="toggle" aria-label="${i.done ? 'Mark not done' : 'Mark done'}"></button>
+      <button class="open-btn" data-act="expand" aria-expanded="${isOpen}">
+        <span class="t">${esc(i.text)}</span>${meta ? `<span class="meta">${meta}</span>` : ''}
+      </button>
+      ${i.done ? '' : `<button class="x plan-x row-plan" data-act="plan-note" aria-label="Put in daily three" title="Put in daily three">${CAL}</button>`}
+    </div>${isOpen ? detailHTML(i) : ''}</li>`;
+}
+function detailHTML(i) {
+  const here = proj().id;
+  const opts = S.projects.map(p => `<option value="${p.id}"${p.id === here ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
+  return `<div class="detail">
+    <input class="field title-in" data-edit="text" value="${esc(i.text)}" aria-label="Title">
+    <textarea class="field" data-edit="note" placeholder="Notes" aria-label="Notes">${esc(i.note || '')}</textarea>
+    <ul class="subs">${i.subs.map(s => `
+      <li class="sub${s.done ? ' done' : ''}" data-sub="${s.id}">
+        <button class="check sm" data-act="sub-toggle" aria-label="${s.done ? 'Mark subtask not done' : 'Mark subtask done'}"></button>
+        <input class="sub-in" data-edit="sub" value="${esc(s.text)}" aria-label="Subtask">
+        <button class="x plan-x" data-act="plan-sub" aria-label="Put this step in daily three" title="Put in daily three">${CAL}</button>
+        <button class="x" data-act="sub-del" aria-label="Delete subtask">×</button>
+      </li>`).join('')}</ul>
+    <form class="sub-add" data-form="sub" autocomplete="off">
+      <input placeholder="Add subtask" aria-label="Add subtask" enterkeyhint="done">
+      <button type="submit">Add</button>
+    </form>
+    <div class="actions">
+      <button class="soft-btn" data-act="plan-note">Put in daily three</button>
+      <button class="soft-btn" data-act="b-from-note">Start as project</button>
+      <label>Move to<select data-move>${opts}</select></label>
+      <button class="danger-btn" data-act="delete">Delete</button>
+    </div>
+  </div>`;
+}
+function renderNotes() {
+  const p = proj(); S.current = p.id;
+  $('#title').textContent = p.name;
+  $('#q').placeholder = `Add to ${p.name}`;
+  $('#chips').innerHTML = S.projects.map(x => {
+    const n = x.items.filter(i => !i.done).length;
+    return `<button class="chip" data-proj="${x.id}" aria-pressed="${x.id === p.id}">${esc(x.name)}${n ? `<span class="n">${n}</span>` : ''}</button>`;
+  }).join('') + `<button class="chip add" data-act="new-project">+ Project</button>`;
+  const todo = p.items.filter(i => !i.done), done = p.items.filter(i => i.done);
+  let h = '';
+  if (!p.items.length) h = `<p class="empty">Nothing in ${esc(p.name)} yet.<br>Type below and press Enter to add a note.</p>`;
+  else {
+    h += todo.length ? `<ul class="list">${todo.map(itemHTML).join('')}</ul>` : `<p class="empty small">Everything here is done.</p>`;
+    if (done.length) {
+      h += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
+      if (S.showDone) h += `<ul class="list">${done.map(itemHTML).join('')}</ul><button class="clear-done" data-act="clear-done">Clear done items</button>`;
+    }
+  }
+  $('#main').innerHTML = h;
+  $('.chip[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+}
+
+function renderOrder() {
+  const n = S.projects.length;
+  $('#order-list').innerHTML = S.projects.map((p, i) => `<li><span>${esc(p.name)}</span>
+    <button class="x" data-act="order-move" data-i="${i}" data-d="-1" aria-label="Move ${esc(p.name)} up"${i ? '' : ' disabled'}>↑</button>
+    <button class="x" data-act="order-move" data-i="${i}" data-d="1" aria-label="Move ${esc(p.name)} down"${i < n - 1 ? '' : ' disabled'}>↓</button></li>`).join('');
+}
+
+/* ---------- render: workouts ---------- */
+const WORK_TYPES = ['Run', 'Bike', 'Lift', 'Kettlebell', 'Walk', 'Hike', 'Climb', 'Swim', 'Stretch', 'Yoga'];
+const fmtMins = m => m < 60 ? `${m} min` : `${Math.floor(m / 60)} h${m % 60 ? ` ${m % 60} min` : ''}`;
+const dateShort = k => Math.abs(diffDays(todayKey(), k)) <= 1 ? dayLabel(k) : parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+// recent types first, then saved workout standards, then the defaults
+function workTypes() {
+  const seen = [];
+  for (const w of [...S.workouts].sort((a, b) => b.created - a.created)) if (!seen.includes(w.type)) seen.push(w.type);
+  for (const d of S.docs) if (d.cat === 'Workouts' && !seen.includes(d.title)) seen.push(d.title);
+  for (const t of WORK_TYPES) if (!seen.includes(t)) seen.push(t);
+  return seen;
+}
+function renderWork() {
+  const t = todayKey(), types = workTypes();
+  let h = `<form class="card" id="wk-form" autocomplete="off">
+    <h2>Log a workout</h2>
+    <div class="btn-row">${types.slice(0, 8).map(x => `<button type="button" class="pill" data-act="wk-type" data-type="${esc(x)}">${esc(x)}</button>`).join('')}</div>
+    <div class="form-grid">
+      <input class="field full" id="wk-type" list="wk-types" placeholder="Type, e.g. Run" aria-label="Workout type">
+      <input class="field" id="wk-mins" type="number" inputmode="numeric" min="1" placeholder="Minutes" aria-label="Duration in minutes">
+      <input class="field" id="wk-date" type="date" value="${t}" aria-label="Date">
+      <div class="btn-row full">${[15, 20, 30, 45, 60, 90].map(m => `<button type="button" class="pill" data-act="wk-mins" data-mins="${m}">${m < 60 ? m + ' min' : m / 60 + ' h'}</button>`).join('')}</div>
+      <input class="field full" id="wk-note" placeholder="Notes (optional)" aria-label="Notes">
+      <button class="btn full">Log workout</button>
+    </div>
+    <datalist id="wk-types">${types.map(x => `<option value="${esc(x)}">`).join('')}</datalist>
+  </form>`;
+
+  const monday = addDays(t, -((parse(t).getDay() + 6) % 7));
+  const week = S.workouts.filter(w => w.date >= monday && w.date <= t);
+  const month = S.workouts.filter(w => w.date > addDays(t, -28) && w.date <= t);
+  const byType = {};
+  month.forEach(w => { const b = byType[w.type] ??= { n: 0, mins: 0 }; b.n++; b.mins += w.mins; });
+  const rows = Object.entries(byType).sort((a, b) => b[1].mins - a[1].mins);
+  const max = Math.max(1, ...rows.map(r => r[1].mins));
+  h += `<div class="card"><h2>This week</h2>
+    <div class="stat-row">
+      <div><b>${week.length}</b><span>workouts</span></div>
+      <div><b>${fmtMins(week.reduce((a, w) => a + w.mins, 0))}</b><span>total time</span></div>
+      <div><b>${month.length}</b><span>last 28 days</span></div>
+    </div>
+    ${rows.length ? `<h3 class="mini-h">Last 28 days by type</h3>` + rows.map(([type, b]) =>
+      `<div class="type-row"><span>${esc(type)}</span><span class="bar"><i style="width:${Math.round(b.mins / max * 100)}%"></i></span><span>${b.n}× · ${fmtMins(b.mins)}</span></div>`).join('') : ''}
+  </div>`;
+
+  const list = [...S.workouts].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, 100);
+  if (!list.length) h += `<p class="empty small">No workouts logged yet.</p>`;
+  let day = null;
+  for (const w of list) {
+    if (w.date !== day) { if (day) h += `</ul>`; day = w.date; h += `<h3 class="day-h">${dateShort(day)}</h3><ul class="list">`; }
+    h += `<li class="wk-row" data-wk="${w.id}"><div class="wk-main"><span class="wk-type">${esc(w.type)}</span>${w.note ? `<span class="wk-sub">${esc(w.note)}</span>` : ''}</div>
+      <span class="wk-mins">${fmtMins(w.mins)}</span><button class="x" data-act="wk-del" aria-label="Delete workout">×</button></li>`;
+  }
+  if (day) h += `</ul>`;
+  $('#work').innerHTML = h;
+}
+
+/* ---------- render: goals ---------- */
+const hr = x => String(Math.round(x * 10) / 10);
+const weekStart = k => addDays(k, -((parse(k).getDay() + 6) % 7));
+function fmtV(t, v) {
+  if (t.kind === 'hours') return `${hr(v)} h`;
+  if (t.kind === 'score') return t.unit === '%' ? `${hr(v)}%` : `${hr(v)} ${t.unit}`.trim();
+  return `${hr(v)} ${t.unit}`.trim();
+}
+// summary text, progress percent (null = no bar) and a secondary note per tracker
+function trackStats(t) {
+  const today = todayKey(), sum = l => l.reduce((a, x) => a + x.v, 0);
+  if (t.kind === 'checklist') {
+    const done = t.items.filter(i => i.done).length, total = t.items.length;
+    return { done, total, rem: total - done, summary: `${done}/${total} done`, pct: total ? done / total * 100 : null };
+  }
+  if (t.kind === 'days') {
+    const set = new Set(t.log.map(l => l.date)), wk = t.log.filter(l => l.date >= weekStart(today) && l.date <= today).length;
+    let k = set.has(today) ? today : addDays(today, -1), streak = 0;
+    while (set.has(k)) { streak++; k = addDays(k, -1); }
+    return { summary: t.target ? `${wk}/${t.target} this week` : `${wk} this week`, pct: t.target ? Math.min(100, wk / t.target * 100) : null,
+             note: streak ? `${streak}-day streak` : '' };
+  }
+  if (t.kind === 'score') {
+    const log = [...t.log].sort((a, b) => a.date.localeCompare(b.date) || a.created - b.created);
+    const latest = log.at(-1)?.v;
+    if (latest === undefined) return { summary: t.target ? `Pass at ${fmtV(t, t.target)}` : 'No scores yet', pct: t.target ? 0 : null };
+    return { summary: `Latest ${fmtV(t, latest)}${t.target ? ` / ${fmtV(t, t.target)}` : ''}`, pct: t.target ? Math.min(100, latest / t.target * 100) : null,
+             note: log.length > 1 ? log.slice(-5).map(l => hr(l.v)).join(' → ') + ` · best ${fmtV(t, Math.max(...log.map(l => l.v)))}` : '' };
+  }
+  const total = sum(t.log), week = sum(t.log.filter(l => l.date > addDays(today, -7) && l.date <= today));
+  return { total, rem: Math.max(0, t.target - total), pct: t.target ? Math.min(100, total / t.target * 100) : null,
+           summary: t.target ? `${hr(total)} / ${fmtV(t, t.target)}` : fmtV(t, total), note: `${fmtV(t, week)} in the last 7 days` };
+}
+function trackPace(g, t, st) {
+  const days = g.date ? diffDays(todayKey(), g.date) : 0;
+  if (days <= 0 || !st.rem || !['hours', 'count', 'checklist'].includes(t.kind) || (t.kind !== 'checklist' && !t.target)) return '';
+  const per = st.rem / (days / 7);
+  return t.kind === 'checklist' ? `${hr(per)} a week to finish` : `${fmtV(t, per)} a week to hit target`;
+}
+function trackerHTML(g, t) {
+  const st = trackStats(t), pace = trackPace(g, t, st), today = todayKey();
+  let h = `<div class="trk" data-trk="${t.id}">
+    <div class="trk-top"><span class="trk-name">${esc(t.name)}</span><span class="trk-val">${esc(st.summary)}</span></div>
+    ${st.pct !== null ? `<span class="bar thin"><i style="width:${st.pct}%"></i></span>` : ''}
+    ${st.note || pace ? `<div class="goal-meta"><span>${esc(st.note || '')}</span><span class="goal-pace">${esc(pace)}</span></div>` : ''}`;
+  if (t.kind === 'hours' || t.kind === 'count') {
+    const steps = t.kind === 'hours' ? [[0.5, '+30 min'], [1, '+1 h'], [2, '+2 h']] : [[1, '+1'], [5, '+5'], [10, '+10']];
+    h += `<div class="btn-row">${steps.map(([v, l]) => `<button class="pill green" data-act="trk-add" data-v="${v}">${l}</button>`).join('')}<button class="pill" data-act="trk-other">Other…</button></div>`;
+  } else if (t.kind === 'score') {
+    h += `<div class="btn-row"><button class="pill green" data-act="trk-other">Add a score</button></div>`;
+  } else if (t.kind === 'days') {
+    const ws = weekStart(today), set = new Set(t.log.map(l => l.date));
+    h += `<div class="dots">${[0, 1, 2, 3, 4, 5, 6].map(i => {
+      const k = addDays(ws, i), on = set.has(k);
+      return `<button class="dot${on ? ' on' : ''}${k === today ? ' today' : ''}" data-act="trk-day" data-day="${k}" aria-pressed="${on}" aria-label="${parse(k).toLocaleDateString(undefined, { weekday: 'long' })}"${k > today ? ' disabled' : ''}>${'MTWTFSS'[i]}</button>`;
+    }).join('')}</div>`;
+  } else {
+    h += t.items.length
+      ? `<div class="btn-row">${t.items.map(i => `<button class="pill${i.done ? ' on' : ''}" data-act="trk-item" data-item="${i.id}" aria-pressed="${i.done}">${esc(i.text)}</button>`).join('')}</div>`
+      : `<p class="muted-p">No items yet. Add them under Edit.</p>`;
+  }
+  return h + `</div>`;
+}
+function renderGoals() {
+  let h = '';
+  for (const g of S.goals) {
+    const isOpen = openGoal === g.id, days = g.date ? diffDays(todayKey(), g.date) : null;
+    const when = g.date ? parse(g.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    let cd;
+    if (days === null) cd = `<p class="countdown">No date set yet. Tap Edit to add one.</p>`;
+    else if (days > 0) cd = `<p class="countdown"><b>${days}</b>day${days === 1 ? '' : 's'} until ${when}</p>`;
+    else if (days === 0) cd = `<p class="countdown"><b>Today</b>Good luck.</p>`;
+    else cd = `<p class="countdown">Was ${when}, ${-days} day${days === -1 ? '' : 's'} ago</p>`;
+    h += `<section class="card" data-goal="${g.id}">
+      <div class="goal-top"><h2>${esc(g.name)}</h2><button class="soft-btn" data-act="goal-edit" aria-expanded="${isOpen}">${isOpen ? 'Done' : 'Edit'}</button></div>
+      ${cd}
+      ${isOpen ? goalDetail(g) : g.trackers.length ? g.trackers.map(t => trackerHTML(g, t)).join('') : `<p class="muted-p">No trackers yet. Tap Edit to add one.</p>`}
+    </section>`;
+  }
+  h += `<button class="add-slot" data-act="goal-new">+ New goal</button>`;
+  $('#goals').innerHTML = h;
+}
+function trackerEdit(t) {
+  const logged = ['hours', 'count', 'score'].includes(t.kind);
+  const log = logged ? [...t.log].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, 30) : [];
+  let h = `<div class="trk-edit" data-trk="${t.id}">
+    <div class="trk-top"><span class="trk-kind">${TRACK_KINDS[t.kind].label}</span><button class="x" data-act="trk-del" aria-label="Remove ${esc(t.name)}">×</button></div>
+    <div class="form-grid">
+      <label class="lbl full">Name<input class="field" data-tedit="name" value="${esc(t.name)}"></label>
+      ${t.kind !== 'checklist' ? `<label class="lbl">${TARGET_LABEL[t.kind]}<input class="field" type="number" inputmode="decimal" min="0" data-tedit="target" value="${t.target || ''}"></label>` : ''}
+      ${t.kind === 'count' || t.kind === 'score' ? `<label class="lbl">Unit<input class="field" data-tedit="unit" value="${esc(t.unit)}"></label>` : ''}
+    </div>`;
+  if (t.kind === 'checklist') {
+    h += `<ul class="subs">${t.items.map(i => `
+      <li class="sub${i.done ? ' done' : ''}" data-item="${i.id}">
+        <button class="check sm" data-act="trk-item" aria-label="${i.done ? 'Mark not done' : 'Mark done'}"></button>
+        <input class="sub-in" data-iedit value="${esc(i.text)}" aria-label="Item">
+        <button class="x" data-act="trk-item-del" aria-label="Delete item">×</button>
+      </li>`).join('')}</ul>
+      <form class="sub-add" data-form="trk-item" autocomplete="off"><input placeholder="Add item" aria-label="Add item" enterkeyhint="done"><button type="submit">Add</button></form>
+      ${t.items.length ? '' : `<button class="soft-btn trk-preset" data-act="trk-fe">Fill with FE Electrical and Computer topics</button>`}`;
+  }
+  if (log.length) h += `<h3 class="mini-h">History</h3><ul class="log-list">${log.map(l => `<li data-log="${l.id}"><input type="date" data-ledit value="${l.date}" aria-label="Date"><span class="log-h">${esc(fmtV(t, l.v))}</span><button class="x" data-act="trk-log-del" aria-label="Delete entry">×</button></li>`).join('')}</ul>`;
+  return h + `</div>`;
+}
+function goalDetail(g) {
+  return `<div class="goal-detail">
+    <div class="form-grid">
+      <label class="lbl">Name<input class="field" data-gedit="name" value="${esc(g.name)}"></label>
+      <label class="lbl">Date<input class="field" type="date" data-gedit="date" value="${g.date || ''}"></label>
+    </div>
+    ${g.trackers.map(trackerEdit).join('')}
+    <div class="actions"><button class="soft-btn" data-act="trk-new">+ Add a tracker</button><button class="danger-btn" data-act="goal-del">Delete goal</button></div>
+  </div>`;
+}
+function logTracker(t, v) {
+  if (!(v > 0 || (t.kind === 'score' && v === 0))) return toast('That isn’t a number');
+  t.log.push({ id: uid(), date: todayKey(), v, created: Date.now() });
+  save(); renderGoals(); toast(`Logged ${fmtV(t, v)}`);
+}
+
+/* ---------- render: standards ---------- */
+const DOC_CATS = ['Workouts', 'Recipes', 'Grocery lists', 'Other'];
+function docMeta(d) {
+  if (d.kind === 'list') { const n = d.items.length; return n ? `${d.items.filter(i => i.done).length}/${n} checked` : 'Empty list'; }
+  const first = d.body.split('\n').find(l => l.trim());
+  return first ? first.trim() : 'Empty';
+}
+function docHTML(d) {
+  const isOpen = openDoc === d.id;
+  return `<li class="item${isOpen ? ' open' : ''}" data-doc="${d.id}">
+    <div class="row"><button class="open-btn doc-open" data-act="doc-expand" aria-expanded="${isOpen}"><span class="t">${esc(d.title)}</span><span class="meta">${esc(docMeta(d))}</span></button></div>
+    ${isOpen ? docDetail(d) : ''}</li>`;
+}
+function docDetail(d) {
+  const list = d.kind === 'list';
+  return `<div class="detail doc-detail">
+    <input class="field title-in" data-dedit="title" value="${esc(d.title)}" aria-label="Title">
+    <div class="doc-opts">
+      <select class="field" data-dedit="cat" aria-label="Category">${DOC_CATS.map(c => `<option${c === d.cat ? ' selected' : ''}>${c}</option>`).join('')}</select>
+      <div class="seg">${[['text', 'Text'], ['list', 'Checklist']].map(([k, n]) => `<button data-act="doc-kind" data-kind="${k}" aria-pressed="${d.kind === k}">${n}</button>`).join('')}</div>
+    </div>
+    ${list ? `<ul class="subs">${d.items.map(i => `
+      <li class="sub${i.done ? ' done' : ''}" data-item="${i.id}">
+        <button class="check sm" data-act="doc-check" aria-label="${i.done ? 'Uncheck' : 'Check'}"></button>
+        <input class="sub-in" data-dedit="item" value="${esc(i.text)}" aria-label="List item">
+        <button class="x" data-act="doc-item-del" aria-label="Delete item">×</button>
+      </li>`).join('')}</ul>
+      <form class="sub-add" data-form="doc-item" autocomplete="off">
+        <input placeholder="Add item" aria-label="Add item" enterkeyhint="done">
+        <button type="submit">Add</button>
+      </form>`
+    : `<textarea class="field doc-body" data-dedit="body" placeholder="Sets and reps, ingredients and steps, whatever the standard is" aria-label="Document text">${esc(d.body)}</textarea>`}
+    <div class="actions">
+      ${list && d.items.some(i => i.done) ? `<button class="soft-btn" data-act="doc-uncheck">Uncheck all</button>` : '<span></span>'}
+      <button class="danger-btn" data-act="doc-del">Delete</button>
+    </div>
+  </div>`;
+}
+function renderDocs() {
+  const f = DOC_CATS.includes(S.docCat) ? S.docCat : 'all';
+  $('#doc-chips').innerHTML = [['all', 'All', 0], ...DOC_CATS.map(c => [c, c, S.docs.filter(d => d.cat === c).length])].map(([v, n, c]) =>
+    `<button class="chip" data-act="doc-filter" data-cat="${esc(v)}" aria-pressed="${v === f}">${esc(n)}${c ? `<span class="n">${c}</span>` : ''}</button>`).join('')
+    + `<button class="chip add" data-act="doc-new">+ New</button>`;
+  let h = '';
+  for (const c of f === 'all' ? DOC_CATS : [f]) {
+    const ds = S.docs.filter(d => d.cat === c);
+    if (!ds.length) continue;
+    if (f === 'all') h += `<h3 class="day-h">${c}</h3>`;
+    h += `<ul class="list">${ds.map(docHTML).join('')}</ul>`;
+  }
+  $('#docs').innerHTML = h || `<p class="empty">No ${f === 'all' ? 'standards' : f.toLowerCase()} yet.<br>Tap + New to write down your go-to workouts, recipes and grocery lists.</p>`;
+}
+
+const VIEWS = {
+  today: { el: '#v-today', render: () => renderToday(), title: () => 'Daily three' },
+  notes: { el: '#v-notes', render: () => renderNotes(), title: () => proj().name },
+  work: { el: '#v-work', render: () => renderWork(), title: () => 'Workouts' },
+  goals: { el: '#v-goals', render: () => renderGoals(), title: () => 'Goals' },
+  docs: { el: '#v-docs', render: () => renderDocs(), title: () => 'Standards' },
+  build: { el: '#v-build', render: () => renderBuild(), title: () => S.buildSeg === 'biz' ? 'Businesses' : 'Projects' },
+  more: { el: '#v-more', render: () => renderMore(), title: () => 'More' },
+  car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' }
+};
+const MORE_TABS = ['more', 'work', 'docs', 'car'];
+function renderAll() {
+  if (!VIEWS[S.tab]) S.tab = 'today';
+  for (const [k, v] of Object.entries(VIEWS)) $(v.el).hidden = k !== S.tab;
+  $('#quick-wrap').hidden = S.tab !== 'notes';
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.tab === S.tab || (t.dataset.tab === 'more' && MORE_TABS.includes(S.tab))));
+  document.title = `${VIEWS[S.tab].title()} · Jot`;
+  VIEWS[S.tab].render();
+}
+
+/* ---------- quick add ---------- */
+$('#quick').addEventListener('submit', e => {
+  e.preventDefault();
+  const q = $('#q');
+  let text = q.value.trim(); if (!text) return;
+  let target = proj();
+  const m = text.match(/(^|\s)#(\S+)/);
+  if (m) {
+    const key = m[2].toLowerCase();
+    const hit = S.projects.find(p => p.name.toLowerCase().replace(/\s+/g, '').startsWith(key));
+    if (hit) { target = hit; text = (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim(); }
+  }
+  if (!text) return;
+  target.items.unshift({ id: uid(), text, note: '', done: false, subs: [], created: Date.now() });
+  q.value = ''; save(); renderNotes();
+  if (target.id !== S.current) toast(`Added to ${target.name}`);
+  q.focus();
+});
+
+/* ---------- event dialog ---------- */
+function openEvent(ev, day) {
+  const d = $('#event');
+  $('#ev-head').textContent = ev ? 'Edit event' : 'New all-day event';
+  $('#ev-name').value = ev?.title || '';
+  $('#ev-start').value = ev?.start || day;
+  $('#ev-end').value = ev?.end || day;
+  $('#ev-pause').checked = ev ? ev.pause : true;
+  $('#ev-yearly').checked = !!ev?.yearly;
+  $('#ev-del').hidden = !ev;
+  d.returnValue = ''; d.showModal();
+  if (!ev) setTimeout(() => $('#ev-name').focus(), 60);
+  d.addEventListener('close', () => {
+    if (d.returnValue === 'delete' && ev) { S.events = S.events.filter(x => x !== ev); save(); renderAll(); toast('Event deleted'); return; }
+    if (d.returnValue !== 'ok') return;
+    const title = $('#ev-name').value.trim(), start = $('#ev-start').value;
+    if (!title || !start) return toast('Add a name and a start date');
+    const end = $('#ev-end').value > start ? $('#ev-end').value : start;
+    const data = { title, start, end, pause: $('#ev-pause').checked, yearly: $('#ev-yearly').checked };
+    if (ev) Object.assign(ev, data); else S.events.push({ id: uid(), ...data });
+    save(); renderAll(); toast(ev ? 'Event saved' : 'Event added');
+  }, { once: true });
+}
+$('#ev-start').addEventListener('change', e => { if ($('#ev-end').value < e.target.value) $('#ev-end').value = e.target.value; });
+
+/* ---------- plan a note or step into a day ---------- */
+async function planIntoDay(it, sb) {
+  const t = todayKey();
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    const k = addDays(t, i), st = slotsFor(k).filter(s => !getSlot(k, s.key).task).length, evs = eventsOn(k).map(x => x.ev.title);
+    days.push({ value: k, label: i < 2 ? dayLabel(k) : parse(k).toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' }),
+                sub: [...evs, st ? `${st} open slot${st > 1 ? 's' : ''}` : 'All slots filled'].join(' · ') });
+  }
+  const k = await menu(`Plan “${sb ? sb.text : it.text}”`, days);
+  if (!k) return;
+  const opts = slotsFor(k).map(s => { const cur = getSlot(k, s.key); return { value: s.key, label: s.when, sub: cur.task ? `Replaces “${cur.task}”` : 'Empty' }; });
+  opts.push({ value: '_new', label: '+ Add as an extra task' });
+  let key = await menu(dayLabel(k) === 'Today' ? 'Which slot today?' : `Which slot, ${dayLabel(k)}?`, opts);
+  if (!key) return;
+  if (key === '_new') key = addExtra(k);
+  assign(k, key, sb ? sb.text : it.text, it.id, 0, sb?.id);
+  save(); renderAll(); toast(`Planned for${dayLabel(k) === 'Today' || dayLabel(k) === 'Tomorrow' ? dayLabel(k).toLowerCase() : dayLabel(k)}`);
+}
+
+/* ---------- note done <-> slot done ---------- */
+function setNoteDone(it, done) {
+  it.done = done; it.doneAt = done ? Date.now() : null;
+  // reflect in today's (or the latest) planned slot for this note
+  const k = linkedDays(it.id).filter(d => d <= todayKey()).pop();
+  if (k) for (const e of Object.values(S.days[k])) if (e?.noteId === it.id && !e.subId) e.done = done;
+}
+function setSubDone(it, sb, done) {
+  sb.done = done;
+  const k = linkedDays(it.id).filter(d => d <= todayKey()).pop();
+  if (k) for (const e of Object.values(S.days[k])) if (e?.subId === sb.id) e.done = done;
+}
+
+/* ---------- clicks ---------- */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-act],[data-proj],[data-tab]');
+  if (!b) return;
+  if (b.dataset.tab) { if (b.dataset.tab === 'build' && S.tab === 'build') openBuild = null; S.tab = b.dataset.tab; open = null; save(); renderAll(); window.scrollTo(0, 0); return; }
+  if (b.dataset.proj) { S.current = b.dataset.proj; open = null; save(); renderNotes(); return; }
+
+  const li = b.closest('.item');
+  const { p, it } = li ? findItem(li.dataset.id) : {};
+  const sub = it && b.closest('.sub') ? it.subs.find(s => s.id === b.closest('.sub').dataset.sub) : null;
+
+  switch (b.dataset.act) {
+    /* daily */
+    case 'day-prev': viewDay = addDays(viewDay, -1); renderToday(); break;
+    case 'day-next': viewDay = addDays(viewDay, 1); renderToday(); break;
+    case 'goto': if (viewDay === addDays(todayKey(), -1) && b.dataset.day === todayKey()) { (S.days[viewDay] ??= {})._reviewed = true; save(); }
+      viewDay = b.dataset.day; renderToday(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
+    case 'pick': openPicker(viewDay, b.dataset.slot); break;
+    case 'flip': {
+      const cur = getSlot(viewDay, b.dataset.slot); if (!cur.task) break;
+      const entry = { task: cur.task, done: !cur.done };
+      if (cur.noteId) entry.noteId = cur.noteId;
+      if (cur.subId) entry.subId = cur.subId;
+      if (cur.repeat) entry.repeat = cur.repeat;
+      setSlot(viewDay, b.dataset.slot, entry);
+      if (entry.noteId) {
+        const f = findItem(entry.noteId);
+        if (f.it && entry.subId) { const sb = f.it.subs.find(x => x.id === entry.subId); if (sb) sb.done = entry.done; }
+        else if (f.it && !f.p.virtual) { f.it.done = entry.done; f.it.doneAt = entry.done ? Date.now() : null; }
+      }
+      save(); renderToday();
+      if (entry.noteId && entry.done) toast(entry.subId ? 'Step checked off in your notes' : 'Note checked off too');
+      break;
+    }
+    case 'pick-note': { const f = findItem(b.dataset.id); if (f.it) applyPick(f.it.text, f.it.id); break; }
+    case 'pick-sub': {
+      const f = findItem(b.dataset.id), sb = f.it?.subs.find(x => x.id === b.dataset.sub);
+      if (sb) applyPick(sb.text, f.it.id, sb.id);
+      break;
+    }
+    case 'pick-task': S.custom.includes(b.dataset.task) ? pickCustom(b.dataset.task) : applyPick(b.dataset.task); break;
+    case 'pick-custom': pickCustom($('#pick-custom').value.trim()); break;
+    case 'ev-new': openEvent(null, viewDay); break;
+    case 'ev-edit': { const ev = S.events.find(x => x.id === b.dataset.ev); if (ev) openEvent(ev); break; }
+    case 'ev-show': (S.days[viewDay] ??= {})._show = true; save(); renderToday(); break;
+    case 'slot-add': { const key = addExtra(viewDay); save(); renderToday(); openPicker(viewDay, key); break; }
+    case 'slot-remove': removeSlot(pickCtx.k, pickCtx.slotKey); $('#pick').close(); save(); renderAll(); break;
+    case 'pick-surprise': {
+      const all = menuCats(pickCtx.menu).flatMap(c => c.tasks);
+      const used = slotsFor(pickCtx.k).map(s => getSlot(pickCtx.k, s.key).task);
+      const pool = all.filter(t => !used.includes(t));
+      const pickFrom = pool.length ? pool : all;
+      if (pickFrom.length) applyPick(pickFrom[Math.floor(Math.random() * pickFrom.length)]);
+      break;
+    }
+    case 'pick-clear': setSlot(pickCtx.k, pickCtx.slotKey, { task: '', done: false }); $('#pick').close(); save(); renderAll(); break;
+    case 'pick-stop': {
+      const cur = getSlot(pickCtx.k, pickCtx.slotKey);
+      const r = S.repeats.find(x => x.id === cur.repeat);
+      if (r) { r.end = addDays(pickCtx.k, -1); if (r.end < r.start) S.repeats = S.repeats.filter(x => x !== r); }
+      $('#pick').close(); save(); renderAll(); toast('Stopped repeating from this day on');
+      break;
+    }
+    case 'pick-close': $('#pick').close(); break;
+    case 'today-menu': {
+      const d = S.days[viewDay], changed = d?._extra?.length || d?._hide?.length;
+      const v = await menu('Daily three', [
+        { value: 'event', label: 'Add an all-day event', sub: 'Hunting trip, holiday, travel day' },
+        { value: 'lists', label: 'Edit task lists' },
+        ...(changed ? [{ value: 'reset-slots', label: 'Reset slots for this day', sub: 'Back to the default slots' }] : []),
+        { value: 'export', label: 'Export backup', sub: 'Everything in Jot' },
+        { value: 'import', label: 'Import backup' }
+      ]);
+      if (v === 'event') openEvent(null, viewDay);
+      else if (v === 'lists') openLists();
+      else if (v === 'reset-slots') { (d._extra || []).forEach(x => delete d[x]); delete d._extra; delete d._hide; save(); renderToday(); }
+      else if (v === 'export') exportBackup();
+      else if (v === 'import') $('#file').click();
+      break;
+    }
+    case 'lists-seg': stashList(); listsMenu = b.dataset.menu; fillLists(); break;
+    case 'lists-save': {
+      stashList();
+      for (const [m, txt] of Object.entries(listsDraft)) {
+        if (m === 'custom') S.custom = txt.split('\n').map(s => s.trim()).filter(Boolean);
+        else S.menus[m] = parseList(txt);
+      }
+      $('#lists').close(); save(); renderAll(); toast('Task lists saved');
+      break;
+    }
+    case 'lists-reset': $('#lists-text').value = listsMenu === 'custom' ? '' : toText(DEFAULT_MENUS[listsMenu]); break;
+    case 'lists-close': $('#lists').close(); break;
+
+    /* notes */
+    case 'toggle':
+      setNoteDone(it, !it.done);
+      if (it.done && open === it.id) open = null;
+      save(); renderNotes();
+      if (it.done) toast('Marked done');
+      break;
+    case 'expand': open = open === it.id ? null : it.id; renderNotes(); break;
+    case 'sub-toggle': setSubDone(it, sub, !sub.done); save(); renderNotes(); break;
+    case 'sub-del': it.subs = it.subs.filter(s => s !== sub); save(); renderNotes(); break;
+    case 'plan-note': await planIntoDay(it, null); break;
+    case 'plan-sub': await planIntoDay(it, sub); break;
+    case 'delete':
+      if (await ask({ title: 'Delete this note?', body: `“${it.text}” and its subtasks will be removed.`, ok: 'Delete', danger: true })) {
+        p.items = p.items.filter(x => x !== it); open = null; save(); renderNotes(); toast('Deleted');
+      }
+      break;
+    case 'toggle-done': S.showDone = !S.showDone; save(); renderNotes(); break;
+    case 'clear-done': {
+      const cp = proj(), n = cp.items.filter(i => i.done).length;
+      if (await ask({ title: `Clear ${n} done item${n > 1 ? 's' : ''}?`, body: 'They will be removed from this project.', ok: 'Clear', danger: true })) {
+        cp.items = cp.items.filter(i => !i.done); save(); renderNotes();
+      }
+      break;
+    }
+    case 'new-project': {
+      const name = await ask({ title: 'New project', input: '', placeholder: 'Project name', ok: 'Create' });
+      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; open = null; save(); renderNotes(); }
+      break;
+    }
+    case 'menu': {
+      const cp = proj(), inbox = cp.id === 'inbox';
+      const opts = inbox ? [] : [{ value: 'rename', label: 'Rename project' }, { value: 'delete', label: 'Delete project', danger: true }];
+      if (S.projects.length > 1) opts.unshift({ value: 'reorder', label: 'Reorder projects' });
+      opts.push({ value: 'export', label: 'Export backup' }, { value: 'import', label: 'Import backup' });
+      const v = await menu(cp.name, opts);
+      if (v === 'reorder') { renderOrder(); $('#order').showModal(); }
+      else if (v === 'rename') {
+        const name = await ask({ title: 'Rename project', input: cp.name, ok: 'Rename' });
+        if (name) { cp.name = name; save(); renderNotes(); }
+      } else if (v === 'delete') {
+        const n = cp.items.length;
+        if (await ask({ title: `Delete ${cp.name}?`, body: n ? `Its ${n} note${n > 1 ? 's' : ''} will be deleted too.` : 'This project is empty.', ok: 'Delete', danger: true })) {
+          S.projects = S.projects.filter(x => x !== cp); S.current = 'inbox'; open = null; save(); renderNotes(); toast('Project deleted');
+        }
+      } else if (v === 'export') exportBackup();
+      else if (v === 'import') $('#file').click();
+      break;
+    }
+    case 'order-move': {
+      const a = S.projects, i = +b.dataset.i, j = i + +b.dataset.d;
+      if (!a[j]) break;
+      [a[i], a[j]] = [a[j], a[i]];
+      save(); renderOrder(); renderNotes();
+      $(`#order-list [data-i="${j}"][data-d="${b.dataset.d}"]`)?.focus();
+      break;
+    }
+    case 'order-done': $('#order').close(); break;
+
+    /* workouts */
+    case 'wk-type': $('#wk-type').value = b.dataset.type; break;
+    case 'wk-mins': $('#wk-mins').value = b.dataset.mins; break;
+    case 'wk-del': {
+      const w = S.workouts.find(x => x.id === b.closest('[data-wk]').dataset.wk);
+      if (w && await ask({ title: 'Delete this workout?', body: `${w.type}, ${fmtMins(w.mins)} on ${dateShort(w.date)}`, ok: 'Delete', danger: true })) {
+        S.workouts = S.workouts.filter(x => x !== w); save(); renderWork();
+      }
+      break;
+    }
+
+    /* goals */
+    case 'goal-edit': case 'goal-del': case 'trk-new': case 'trk-add': case 'trk-other': case 'trk-day': case 'trk-item':
+    case 'trk-del': case 'trk-log-del': case 'trk-item-del': case 'trk-fe': {
+      const g = S.goals.find(x => x.id === b.closest('[data-goal]').dataset.goal);
+      if (!g) break;
+      const t = g.trackers.find(x => x.id === b.closest('[data-trk]')?.dataset.trk);
+      const item = t && b.closest('[data-item]') && t.items.find(x => x.id === b.closest('[data-item]').dataset.item);
+      const act = b.dataset.act;
+      if (act === 'goal-edit') openGoal = openGoal === g.id ? null : g.id;
+      else if (act === 'goal-del') {
+        if (!await ask({ title: `Delete ${g.name}?`, body: 'Its trackers and history go with it.', ok: 'Delete', danger: true })) break;
+        S.goals = S.goals.filter(x => x !== g); openGoal = null;
+      } else if (act === 'trk-new') {
+        const kind = await menu('Add a tracker', Object.entries(TRACK_KINDS).map(([value, k]) => ({ value, label: k.label, sub: k.sub })));
+        if (!kind) break;
+        g.trackers.push(newTracker(kind));
+      } else if (!t) break;
+      else if (act === 'trk-add') return logTracker(t, +b.dataset.v);
+      else if (act === 'trk-other') {
+        const v = await ask({
+          title: t.kind === 'score' ? `Add a ${t.name.toLowerCase()}` : `Log ${t.name.toLowerCase()}`,
+          body: (t.kind === 'hours' ? 'Hours' : t.kind === 'score' ? `Your result${t.unit === '%' ? ' in percent' : ''}` : `How many ${t.unit}`.trim()) + ', for today. You can change the date under Edit.',
+          input: '', placeholder: t.kind === 'hours' ? 'e.g. 1.5' : t.kind === 'score' ? 'e.g. 68' : 'e.g. 12', ok: 'Log' });
+        if (v) logTracker(t, parseFloat(v.replace(',', '.')));
+        break;
+      }
+      else if (act === 'trk-day') {
+        const i = t.log.findIndex(l => l.date === b.dataset.day);
+        if (i >= 0) t.log.splice(i, 1); else t.log.push({ id: uid(), date: b.dataset.day, v: 1, created: Date.now() });
+      }
+      else if (act === 'trk-item' && item) item.done = !item.done;
+      else if (act === 'trk-item-del') t.items = t.items.filter(x => x !== item);
+      else if (act === 'trk-log-del') t.log = t.log.filter(l => l.id !== b.closest('[data-log]').dataset.log);
+      else if (act === 'trk-fe') t.items.push(...feItems());
+      else if (act === 'trk-del') {
+        if (!await ask({ title: `Remove ${t.name}?`, body: 'Its history goes with it.', ok: 'Remove', danger: true })) break;
+        g.trackers = g.trackers.filter(x => x !== t);
+      }
+      save(); renderGoals();
+      break;
+    }
+    case 'goal-new': {
+      const name = await ask({ title: 'New goal', input: '', placeholder: 'e.g. PE exam, Half marathon', ok: 'Create' });
+      if (name) { const g = { id: uid(), name, date: '', trackers: [] }; S.goals.push(g); openGoal = g.id; save(); renderGoals(); }
+      break;
+    }
+
+    /* standards */
+    case 'doc-filter': S.docCat = b.dataset.cat; openDoc = null; save(); renderDocs(); break;
+    case 'doc-new': {
+      const title = await ask({ title: 'New standard', input: '', placeholder: 'e.g. Leg day, Chili, Weekly groceries', ok: 'Create' });
+      if (!title) break;
+      const cat = DOC_CATS.includes(S.docCat) ? S.docCat : (await menu('Which category?', DOC_CATS.map(c => ({ value: c, label: c })))) || 'Other';
+      const d = { id: uid(), title, cat, kind: cat === 'Grocery lists' ? 'list' : 'text', body: '', items: [], updated: Date.now() };
+      S.docs.push(d); openDoc = d.id; save(); renderDocs();
+      document.querySelector(`[data-doc="${d.id}"] ${d.kind === 'list' ? '.sub-add input' : 'textarea'}`)?.focus();
+      break;
+    }
+    case 'doc-expand': case 'doc-kind': case 'doc-check': case 'doc-item-del': case 'doc-uncheck': case 'doc-del': {
+      const d = S.docs.find(x => x.id === b.closest('[data-doc]').dataset.doc);
+      if (!d) break;
+      const item = b.closest('[data-item]') && d.items.find(x => x.id === b.closest('[data-item]').dataset.item);
+      const act = b.dataset.act;
+      if (act === 'doc-expand') openDoc = openDoc === d.id ? null : d.id;
+      else if (act === 'doc-kind') {
+        d.kind = b.dataset.kind;
+        // carry the content across when the other side is empty
+        if (d.kind === 'list' && !d.items.length && d.body.trim())
+          d.items = d.body.split('\n').map(l => l.replace(/^\s*([-*•]|\[[ x]?\])\s*/i, '').trim()).filter(Boolean).map(text => ({ id: uid(), text, done: false }));
+        if (d.kind === 'text' && !d.body.trim() && d.items.length) d.body = d.items.map(i => i.text).join('\n');
+      }
+      else if (act === 'doc-check' && item) item.done = !item.done;
+      else if (act === 'doc-item-del') d.items = d.items.filter(x => x !== item);
+      else if (act === 'doc-uncheck') d.items.forEach(i => i.done = false);
+      else if (act === 'doc-del') {
+        if (!await ask({ title: `Delete ${d.title}?`, ok: 'Delete', danger: true })) break;
+        S.docs = S.docs.filter(x => x !== d); openDoc = null;
+      }
+      d.updated = Date.now(); save(); renderDocs();
+      break;
+    }
+  }
+});
+
+/* ---------- workout, goal and standards inputs ---------- */
+$('#work').addEventListener('submit', e => {
+  e.preventDefault();
+  const type = $('#wk-type').value.trim(), mins = Math.round(+$('#wk-mins').value);
+  if (!type || !(mins > 0)) return toast('Add a type and the minutes');
+  S.workouts.push({ id: uid(), date: $('#wk-date').value || todayKey(), type, mins, note: $('#wk-note').value.trim(), created: Date.now() });
+  save(); renderWork(); toast(`Logged ${type}, ${fmtMins(mins)}`);
+});
+// text and number fields save as you type (no re-render, so focus stays put); dates re-render
+$('#goals').addEventListener('input', e => {
+  const el = e.target, g = S.goals.find(x => x.id === el.closest('[data-goal]')?.dataset.goal);
+  if (!g || el.type === 'date') return;
+  const t = g.trackers.find(x => x.id === el.closest('[data-trk]')?.dataset.trk);
+  const v = el.value.trim();
+  if (el.dataset.gedit === 'name') { if (v) { g.name = v; el.closest('[data-goal]').querySelector('h2').textContent = v; } }
+  else if (t && el.dataset.tedit === 'name') { if (v) t.name = v; }
+  else if (t && el.dataset.tedit === 'target') t.target = Math.max(0, +v || 0);
+  else if (t && el.dataset.tedit === 'unit') t.unit = v;
+  else if (t && el.hasAttribute('data-iedit')) { const i = t.items.find(x => x.id === el.closest('[data-item]').dataset.item); if (i && v) i.text = v; }
+  else return;
+  save();
+});
+$('#goals').addEventListener('change', e => {
+  const el = e.target, g = S.goals.find(x => x.id === el.closest('[data-goal]')?.dataset.goal);
+  if (!g || el.type !== 'date') return;
+  const t = g.trackers.find(x => x.id === el.closest('[data-trk]')?.dataset.trk);
+  if (el.dataset.gedit === 'date') g.date = el.value;
+  else if (t && el.hasAttribute('data-ledit')) { const l = t.log.find(x => x.id === el.closest('[data-log]').dataset.log); if (l && el.value) l.date = el.value; }
+  else return;
+  save(); renderGoals();
+});
+$('#goals').addEventListener('submit', e => {
+  if (e.target.dataset.form !== 'trk-item') return;
+  e.preventDefault();
+  const g = S.goals.find(x => x.id === e.target.closest('[data-goal]').dataset.goal);
+  const t = g?.trackers.find(x => x.id === e.target.closest('[data-trk]').dataset.trk);
+  const text = e.target.querySelector('input').value.trim();
+  if (!t || !text) return;
+  t.items.push({ id: uid(), text, done: false });
+  save(); renderGoals();
+  document.querySelector(`[data-trk="${t.id}"] .sub-add input`)?.focus();
+});
+$('#goals').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('.sub-in, [data-gedit], [data-tedit]')) { e.preventDefault(); e.target.blur(); }
+});
+$('#docs').addEventListener('input', e => {
+  const el = e.target, kind = el.dataset.dedit;
+  const d = kind && S.docs.find(x => x.id === el.closest('[data-doc]').dataset.doc);
+  if (!d || kind === 'cat') return;
+  if (kind === 'title') { if (el.value.trim()) { d.title = el.value.trim(); el.closest('.item').querySelector('.t').textContent = d.title; } }
+  else if (kind === 'body') d.body = el.value;
+  else if (kind === 'item') { const i = d.items.find(x => x.id === el.closest('[data-item]').dataset.item); if (i && el.value.trim()) i.text = el.value.trim(); }
+  d.updated = Date.now(); save();
+});
+$('#docs').addEventListener('change', e => {
+  if (e.target.dataset.dedit !== 'cat') return;
+  const d = S.docs.find(x => x.id === e.target.closest('[data-doc]').dataset.doc);
+  if (d) { d.cat = e.target.value; save(); renderDocs(); }
+});
+$('#docs').addEventListener('submit', e => {
+  if (e.target.dataset.form !== 'doc-item') return;
+  e.preventDefault();
+  const inp = e.target.querySelector('input');
+  const d = S.docs.find(x => x.id === e.target.closest('[data-doc]').dataset.doc);
+  // pasting several lines adds one item per line
+  const lines = inp.value.split('\n').map(s => s.trim()).filter(Boolean);
+  if (!d || !lines.length) return;
+  d.items.push(...lines.map(text => ({ id: uid(), text, done: false })));
+  d.updated = Date.now(); save(); renderDocs();
+  document.querySelector(`[data-doc="${d.id}"] .sub-add input`)?.focus();
+});
+$('#docs').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('.title-in, .sub-in')) { e.preventDefault(); e.target.blur(); }
+});
+
+/* ---------- list editor ---------- */
+const toText = cats => cats.map(c => `# ${c.name}\n` + c.tasks.join('\n')).join('\n\n');
+function parseList(txt) {
+  const out = []; let cur = null;
+  for (const raw of txt.split('\n')) {
+    const line = raw.trim(); if (!line) continue;
+    if (line.startsWith('#')) { cur = { name: line.replace(/^#+\s*/, '') || 'Other', tasks: [] }; out.push(cur); }
+    else { if (!cur) { cur = { name: 'Other', tasks: [] }; out.push(cur); } cur.tasks.push(line); }
+  }
+  return out;
+}
+function openLists() {
+  listsDraft = Object.fromEntries(Object.keys(LIST_TABS).map(m => [m, m === 'custom' ? S.custom.join('\n') : toText(S.menus[m] || [])]));
+  listsMenu = 'morning'; fillLists(); $('#lists').showModal();
+}
+function stashList() { if (listsDraft) listsDraft[listsMenu] = $('#lists-text').value; }
+function fillLists() {
+  $('#lists-seg').innerHTML = Object.entries(LIST_TABS).map(([m, n]) =>
+    `<button data-act="lists-seg" data-menu="${m}" aria-pressed="${m === listsMenu}">${n}</button>`).join('');
+  $('#lists-text').value = listsDraft[listsMenu];
+}
+
+/* ---------- backup ---------- */
+function exportBackup() {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `jot-backup-${todayKey()}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+$('#file').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!d || !Array.isArray(d.projects) || !d.projects.length) throw 0;
+    if (!d.projects.some(p => p.id === 'inbox')) d.projects.unshift({ id: 'inbox', name: 'Inbox', items: [] });
+    const full = !!d.days;
+    if (await ask({ title: full ? 'Replace everything?' : 'Replace your notes?',
+                    body: full ? 'All notes and daily history will be replaced by this backup.' : 'This is a notes-only backup. Your notes will be replaced; daily history stays.',
+                    ok: 'Replace', danger: true })) {
+      S = full ? Object.assign(fresh(), d) : Object.assign(S, { projects: d.projects, current: 'inbox' });
+      migrateGoals();
+      open = null; save(); renderAll(); toast('Backup restored');
+    }
+  } catch (err) { toast('That file isn’t a Jot backup'); }
+});
+
+/* ---------- inline edits ---------- */
+$('#main').addEventListener('input', e => {
+  const el = e.target, kind = el.dataset.edit; if (!kind) return;
+  const li = el.closest('.item'); const { it } = findItem(li.dataset.id); if (!it) return;
+  if (kind === 'text') {
+    if (el.value.trim()) {
+      it.text = el.value.trim(); li.querySelector('.t').textContent = it.text;
+      for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s?.noteId === it.id && !s.subId) s.task = it.text;
+    }
+  } else if (kind === 'note') it.note = el.value;
+  else if (kind === 'sub') { const s = it.subs.find(x => x.id === el.closest('.sub').dataset.sub); if (s && el.value.trim()) { s.text = el.value.trim(); for (const d of Object.values(S.days)) for (const e of Object.values(d)) if (e?.subId === s.id) e.task = s.text; } }
+  save();
+});
+$('#main').addEventListener('change', e => {
+  if (!e.target.matches('[data-move]')) return;
+  const { p, it } = findItem(e.target.closest('.item').dataset.id);
+  const dest = proj(e.target.value);
+  if (!it || dest === p) return;
+  p.items = p.items.filter(x => x !== it); dest.items.unshift(it);
+  open = null; save(); renderNotes(); toast(`Moved to ${dest.name}`);
+});
+$('#main').addEventListener('submit', e => {
+  if (e.target.dataset.form !== 'sub') return;
+  e.preventDefault();
+  const inp = e.target.querySelector('input'), text = inp.value.trim(); if (!text) return;
+  const { it } = findItem(e.target.closest('.item').dataset.id);
+  it.subs.push({ id: uid(), text, done: false });
+  save(); renderNotes();
+  document.querySelector(`.item[data-id="${it.id}"] .sub-add input`)?.focus();
+});
+$('#main').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.matches('.title-in, .sub-in')) { e.preventDefault(); e.target.blur(); }
+});
+$('#pick-custom').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pickCustom(e.target.value.trim()); } });
+$('#pick').addEventListener('click', e => { if (e.target === $('#pick')) $('#pick').close(); });
+
+/* ---------- generic form dialog ---------- */
+// fields: { key, label, type: text|number|date|select|area|check, half, options, ph, def }. Resolves to the values, 'delete' or null.
+function form({ title, body = '', fields, values = {}, ok = 'Save', del = false }) {
+  const d = $('#form');
+  $('#form-title').textContent = title;
+  $('#form-body').textContent = body; $('#form-body').hidden = !body;
+  $('#form-ok').textContent = ok; $('#form-del').hidden = !del;
+  $('#form-fields').innerHTML = fields.map(f => {
+    const v = values[f.key] ?? f.def ?? '';
+    if (f.type === 'check') return `<label class="chk full"><input type="checkbox" name="${f.key}"${v ? ' checked' : ''}> ${esc(f.label)}</label>`;
+    let inp;
+    if (f.type === 'select') inp = `<select class="field" name="${f.key}">${f.options.map(o => {
+      const [ov, ol] = Array.isArray(o) ? o : [o, o];
+      return `<option value="${esc(ov)}"${String(ov) === String(v) ? ' selected' : ''}>${esc(ol)}</option>`; }).join('')}</select>`;
+    else if (f.type === 'area') inp = `<textarea class="field" name="${f.key}" placeholder="${esc(f.ph || '')}">${esc(v)}</textarea>`;
+    else inp = `<input class="field" name="${f.key}" type="${f.type || 'text'}"${f.type === 'number' ? ' inputmode="decimal" step="any" min="0"' : ''} value="${esc(v)}" placeholder="${esc(f.ph || '')}">`;
+    return `<label class="lbl${f.half ? '' : ' full'}">${esc(f.label)}${inp}</label>`;
+  }).join('');
+  d.returnValue = ''; d.showModal();
+  if (!del) setTimeout(() => d.querySelector('input:not([type=checkbox]):not([type=date]), textarea')?.focus(), 60);
+  return new Promise(res => d.addEventListener('close', () => {
+    if (d.returnValue === 'delete') return res('delete');
+    if (d.returnValue !== 'ok') return res(null);
+    const out = {};
+    for (const f of fields) {
+      const el = d.querySelector(`[name="${f.key}"]`);
+      out[f.key] = f.type === 'check' ? el.checked : f.type === 'number' ? (el.value === '' || isNaN(+el.value) ? null : +el.value) : el.value.trim();
+    }
+    res(out);
+  }, { once: true }));
+}
+const usd = n => { const a = Math.abs(Math.round(n * 100) / 100), d = a % 1 ? 2 : 0; return (n < 0 ? '−$' : '$') + a.toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d }); };
+const mi = n => Math.round(n).toLocaleString();
+const fmtDate = k => parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+const plural = (n, w) => `${n} ${w}${n === 1 ? '' : 's'}`;
+
+/* ---------- car maintenance ---------- */
+// starter schedule: [name, every miles, every months]. Typical values; the owner's manual wins.
+const CAR_DEFAULTS = [
+  ['Oil and filter change', 5000, 6], ['Tire rotation', 6000, 6], ['Brake inspection', 12000, 12], ['Cabin air filter', 15000, 12],
+  ['Engine air filter', 20000, 24], ['Wiper blades', 0, 12], ['Battery test', 0, 12], ['Brake fluid', 0, 24],
+  ['Coolant', 60000, 60], ['Spark plugs', 60000, 0], ['Transmission fluid', 60000, 0], ['Registration renewal', 0, 12]
+];
+const addMonths = (k, n) => { const d = parse(k); d.setMonth(d.getMonth() + n); return dkey(d); };
+const curCar = () => S.car.vehicles.find(v => v.id === S.car.cur) || S.car.vehicles[0];
+const carOdo = v => [...v.odo].sort((a, b) => a.date.localeCompare(b.date) || a.mi - b.mi);
+// miles per day, from your own odometer readings once there are two at least two weeks apart
+function carRate(v) {
+  const o = carOdo(v), b = o.at(-1);
+  if (o.length >= 2) {
+    const recent = o.filter(x => diffDays(x.date, b.date) <= 180);
+    const a = recent.length >= 2 && diffDays(recent[0].date, b.date) >= 30 ? recent[0] : o[0];
+    const d = diffDays(a.date, b.date);
+    if (d >= 14 && b.mi > a.mi) return { r: (b.mi - a.mi) / d, real: true };
+  }
+  return { r: (v.yearly || 12000) / 365, real: false };
+}
+function carNow(v) {
+  const last = carOdo(v).at(-1);
+  if (!last) return null;
+  const days = Math.max(0, diffDays(last.date, todayKey()));
+  return { est: last.mi + carRate(v).r * days, last, days };
+}
+function addOdo(v, date, miles) { v.odo = v.odo.filter(x => x.date !== date); v.odo.push({ date, mi: miles }); }
+// when an item is next due: the earlier of its time interval and the predicted date its mileage interval runs out
+function carDue(v, it) {
+  if (!it.miles && !it.months) return { state: 'none' };
+  if (!it.lastDate && it.lastMi == null) return { state: 'unknown' };
+  const t = todayKey(), now = carNow(v), rate = carRate(v).r;
+  let byDate = null, byMi = null, miLeft = null;
+  if (it.months && it.lastDate) byDate = addMonths(it.lastDate, it.months);
+  if (it.miles) {
+    if (it.lastMi != null && now) { miLeft = it.lastMi + it.miles - now.est; byMi = addDays(t, Math.round(miLeft / rate)); }
+    else if (it.lastDate) byMi = addDays(it.lastDate, Math.round(it.miles / rate));
+  }
+  const due = [byDate, byMi].filter(Boolean).sort()[0];
+  if (!due) return { state: 'unknown' };
+  const days = diffDays(t, due);
+  return { state: days < 0 ? 'over' : days <= 30 ? 'soon' : 'ok', due, days, miLeft };
+}
+function dueText(d) {
+  if (d.state === 'none') return 'No interval set';
+  if (d.state === 'unknown') return 'No record yet. Log it once to start tracking.';
+  const m = d.miLeft == null ? '' : d.miLeft < 0 ? ` · ${mi(-d.miLeft)} mi over` : ` · about ${mi(d.miLeft)} mi left`;
+  if (d.days < 0) return `Overdue by ${plural(-d.days, 'day')}${m}`;
+  return (d.days === 0 ? 'Due today' : d.days <= 60 ? `Due in ${plural(d.days, 'day')}` : `Due around ${fmtDate(d.due)}`) + m;
+}
+function carEvery(it) {
+  const parts = [it.miles ? `${mi(it.miles)} mi` : '', it.months ? (it.months % 12 === 0 ? plural(it.months / 12, 'year') : plural(it.months, 'month')) : ''].filter(Boolean);
+  return parts.length ? `Every ${parts.join(' or ')}` : 'One-off';
+}
+// everything overdue or due within 30 days, across vehicles, most urgent first
+function carAlerts() {
+  const out = [];
+  for (const v of S.car.vehicles) for (const it of v.items) { const d = carDue(v, it); if (d.state === 'over' || d.state === 'soon') out.push({ v, it, d }); }
+  return out.sort((a, b) => a.d.days - b.d.days);
+}
+// how many services land in the next 12 months and what they cost, going by what each cost last time
+function carForecast(v) {
+  const t = todayKey(), end = addDays(t, 365), rate = carRate(v).r;
+  let n = 0, cost = 0, priced = 0;
+  for (const it of v.items) {
+    const d = carDue(v, it);
+    const step = Math.round(Math.min(it.months ? it.months * 30.44 : Infinity, it.miles ? it.miles / rate : Infinity));
+    if (!d.due || !isFinite(step) || step < 7) continue;
+    const c = v.log.find(l => l.item === it.id && l.cost > 0)?.cost;
+    for (let k = d.due < t ? t : d.due; k <= end; k = addDays(k, step)) { n++; if (c) { cost += c; priced++; } }
+  }
+  return { n, cost, priced };
+}
+const CAR_CATS = ['Insurance', 'Registration and fees', 'Parking and tolls', 'Car wash', 'Tires', 'Repairs', 'Accessories and tools', 'Loan or payment', 'Other'];
+// fill-ups oldest to newest give mpg (miles between odometer readings over the gallons that covered them) and how often you fill up
+function fuelStats(v) {
+  const f = [...v.fuel].sort((a, b) => a.date.localeCompare(b.date) || (a.mi || 0) - (b.mi || 0)), n = f.length, t = todayKey();
+  const out = { n, rows: [], month: f.filter(x => x.date.startsWith(t.slice(0, 7))).reduce((a, x) => a + (x.cost || 0), 0), avg: n ? f.reduce((a, x) => a + (x.cost || 0), 0) / n : 0 };
+  if (n >= 2 && diffDays(f[0].date, f[n - 1].date) > 0) { out.every = diffDays(f[0].date, f[n - 1].date) / (n - 1); out.next = addDays(f[n - 1].date, Math.round(out.every)); }
+  const odo = f.filter(x => x.mi != null);
+  if (odo.length >= 2) {
+    const gal = f.slice(f.indexOf(odo[0]) + 1, f.indexOf(odo.at(-1)) + 1).reduce((a, x) => a + (x.gal || 0), 0), miles = odo.at(-1).mi - odo[0].mi;
+    if (gal > 0 && miles > 0) out.mpg = miles / gal;
+  }
+  let prev = null;
+  for (const x of f) {
+    out.rows.unshift({ f: x, mpg: prev && x.mi != null && x.gal && x.mi > prev.mi ? (x.mi - prev.mi) / x.gal : null });
+    if (x.mi != null) prev = x;
+  }
+  return out;
+}
+function renderCar() {
+  const vs = S.car.vehicles, v = curCar();
+  $('#car-chips').innerHTML = vs.map(x => `<button class="chip" data-act="c-veh" data-id="${x.id}" aria-pressed="${x === v}">${esc(x.name)}</button>`).join('')
+    + `<button class="chip add" data-act="c-new-veh">+ Vehicle</button>`;
+  if (!v) {
+    $('#car').innerHTML = `<p class="empty">Add your vehicle to track oil changes, tire rotations, inspections and registration.<br>Jot estimates your mileage between odometer updates and predicts when each one comes due.</p>
+      <button class="add-slot" data-act="c-new-veh">+ Add a vehicle</button>`;
+    return;
+  }
+  v.fuel ??= []; v.exp ??= [];
+  const now = carNow(v), rate = carRate(v), yr = todayKey().slice(0, 4);
+  let h = `<div class="card"><div class="goal-top"><h2>Odometer</h2><button class="soft-btn" data-act="c-odo">Update</button></div>`;
+  h += now ? `<p class="odo">${now.days ? '~' : ''}${mi(now.est)}<small>mi</small></p>
+    <p class="muted-p">${now.days ? `Estimated from ${mi(now.last.mi)} on ${fmtDay(now.last.date)}` : 'Updated today'} · about ${mi(rate.r * 7)} mi a week${rate.real ? ', from your readings' : ' (a guess until there are two readings a couple of weeks apart)'}</p>`
+    : `<p class="muted-p">Add a reading so Jot can predict the mileage-based items.</p>`;
+  h += `</div>`;
+
+  const fs = fuelStats(v);
+  h += `<div class="card"><div class="goal-top"><h2>Fuel</h2><button class="soft-btn" data-act="c-fuel">+ Fill-up</button></div>`;
+  if (fs.n) {
+    h += `<div class="stat-row"><div><b>${fs.mpg ? hr(fs.mpg) : '–'}</b><span>mpg</span></div><div><b>${fs.every ? hr(fs.every) : '–'}</b><span>days between fills</span></div><div><b>${usd(fs.month)}</b><span>this month</span></div></div>
+      <p class="muted-p">${[`${usd(fs.avg)} a fill on average`, fs.every && fs.next >= todayKey() ? `next one around ${fmtDay(fs.next)}` : '', fs.mpg ? '' : 'mpg shows after two fill-ups with the odometer'].filter(Boolean).join(' · ')}</p>
+      <div class="lrows">${fs.rows.slice(0, 6).map(r => `<button class="lrow" data-act="c-fuel" data-id="${r.f.id}"><span class="lr-main"><b>${fmtDay(r.f.date)}</b>
+        <small>${esc([r.f.gal ? `${hr(r.f.gal)} gal` : '', r.f.gal && r.f.cost ? `${usd(r.f.cost / r.f.gal)}/gal` : '', r.mpg ? `${hr(r.mpg)} mpg` : '', r.f.mi != null ? `${mi(r.f.mi)} mi` : ''].filter(Boolean).join(' · '))}</small></span>
+        <span class="lr-val">${usd(r.f.cost || 0)}</span></button>`).join('')}</div>`;
+  } else h += `<p class="muted-p">Log each fill-up with the gallons, what you paid and the odometer. Jot works out your mpg, how often you fill up and what fuel costs you a month, and the odometer readings sharpen the maintenance predictions.</p>`;
+  h += `</div>`;
+
+  const rank = d => d.due ? d.days : d.state === 'unknown' ? 1e6 : 1e7;
+  const rows = v.items.map(it => ({ it, d: carDue(v, it) })).sort((a, b) => rank(a.d) - rank(b.d));
+  h += `<div class="card"><div class="goal-top"><h2>Maintenance and inspections</h2><button class="soft-btn" data-act="c-item-new">+ Add</button></div>`;
+  h += rows.length ? `<div class="lrows">` + rows.map(({ it, d }) => `<div class="lrow" data-item="${it.id}">
+      <button class="row-open" data-act="c-item"><b>${esc(it.name)}</b>
+        <small class="${d.state === 'over' ? 'due-over' : d.state === 'soon' ? 'due-soon' : ''}">${esc(dueText(d))}</small>
+        <small>${esc(carEvery(it))}${it.lastDate ? ` · last ${fmtDate(it.lastDate)}${it.lastMi != null ? ` at ${mi(it.lastMi)} mi` : ''}` : ''}</small></button>
+      <button class="soft-btn" data-act="c-log" aria-label="Log ${esc(it.name)} as done">Done</button></div>`).join('') + `</div>`
+    : `<p class="muted-p">Nothing tracked yet. Add oil changes, inspections, registration, anything that repeats.</p>`;
+  h += `</div>`;
+
+  const f = carForecast(v);
+  if (f.n) h += `<div class="card"><h2>Next 12 months</h2><p class="muted-p">About ${plural(f.n, 'service')} coming up${f.cost ? `, roughly ${usd(f.cost)} going by what ${f.priced === f.n ? 'each' : `${f.priced} of them`} cost last time` : '. Add costs when you log work and Jot will estimate the year’s spend'}.</p></div>`;
+
+  // everything the car cost this year: fuel, logged services and other expenses by category
+  const inYr = l => (l.date || '').startsWith(yr), add = (a, x) => a + (x || 0);
+  const cats = [['Fuel', v.fuel.filter(inYr).reduce((a, x) => add(a, x.cost), 0)], ['Maintenance', v.log.filter(inYr).reduce((a, x) => add(a, x.cost), 0)],
+    ...CAR_CATS.map(c => [c, v.exp.filter(x => inYr(x) && x.cat === c).reduce((a, x) => add(a, x.amt), 0)])].filter(c => c[1] > 0).sort((a, b) => b[1] - a[1]);
+  const total = cats.reduce((a, c) => a + c[1], 0), months = +todayKey().slice(5, 7);
+  // cost per mile only over the stretch covered by this year's odometer readings, so untracked months don't dilute it
+  const oy = carOdo(v).filter(inYr), span = oy.length >= 2 ? oy.at(-1).mi - oy[0].mi : 0;
+  const inSpan = x => x.date >= oy[0].date && x.date <= oy.at(-1).date;
+  const perMile = span >= 200 ? ([...v.fuel, ...v.log].filter(inSpan).reduce((a, x) => add(a, x.cost), 0) + v.exp.filter(inSpan).reduce((a, x) => add(a, x.amt), 0)) / span : 0;
+  h += `<div class="card"><div class="goal-top"><h2>Spending in ${yr}</h2><button class="soft-btn" data-act="c-exp">+ Expense</button></div>`;
+  h += total ? `<div class="stat-row"><div><b>${usd(Math.round(total))}</b><span>total</span></div><div><b>${usd(Math.round(total / months))}</b><span>a month</span></div><div><b>${perMile ? usd(perMile) : '–'}</b><span>a mile</span></div></div>`
+    + cats.map(([c, n]) => `<div class="type-row"><span>${esc(c)}</span><span class="bar"><i style="width:${Math.round(n / cats[0][1] * 100)}%"></i></span><span>${usd(Math.round(n))}</span></div>`).join('')
+    : `<p class="muted-p">Insurance, parking, washes, tires, repairs. Fill-ups and logged services count here on their own.</p>`;
+  const exps = [...v.exp].sort((a, b) => (b.date || '').localeCompare(a.date || '')).slice(0, 30);
+  if (exps.length) h += `<h3 class="mini-h">Other expenses</h3><div class="lrows">${exps.map(x => `<button class="lrow" data-act="c-exp" data-id="${x.id}"><span class="lr-main"><b>${esc(x.note || x.cat)}</b>
+    <small>${esc([x.date ? (inYr(x) ? fmtDay(x.date) : fmtDate(x.date)) : '', x.note ? x.cat : ''].filter(Boolean).join(' · '))}</small></span><span class="lr-val">${usd(x.amt || 0)}</span></button>`).join('')}</div>`;
+  h += `</div>`;
+
+  const spent = v.log.filter(l => l.date.startsWith(yr)).reduce((a, l) => a + (l.cost || 0), 0);
+  h += `<div class="card"><div class="goal-top"><h2>Service history</h2><button class="soft-btn" data-act="c-log-other">+ Other work</button></div>`;
+  h += v.log.length ? `<p class="muted-p">${usd(spent)} spent in ${yr}</p><ul class="log-list">` + v.log.slice(0, 80).map(l => `<li data-log="${l.id}">
+      <span class="log-d">${l.date.startsWith(yr) ? fmtDay(l.date) : fmtDate(l.date)}</span>
+      <span class="log-t">${esc(l.name)}<small>${esc([l.mi != null ? `${mi(l.mi)} mi` : '', l.cost ? usd(l.cost) : '', l.note].filter(Boolean).join(' · '))}</small></span>
+      <button class="x" data-act="c-log-del" aria-label="Delete entry">×</button></li>`).join('') + `</ul>`
+    : `<p class="muted-p">Tap Done on an item when you do it, or log repairs and other work here.</p>`;
+  $('#car').innerHTML = h + `</div>`;
+}
+async function carClick(act, b) {
+  const v = curCar();
+  if (act === 'c-veh') { S.car.cur = b.dataset.id; save(); return renderCar(); }
+  if (act === 'c-new-veh') {
+    const r = await form({ title: 'Add a vehicle', ok: 'Add', body: 'The starter schedule uses typical intervals. Check your owner’s manual and adjust them.', fields: [
+      { key: 'name', label: 'Name', ph: 'e.g. 2016 Tacoma' },
+      { key: 'odo', label: 'Odometer now (mi)', type: 'number', half: 1 }, { key: 'yearly', label: 'Miles a year (guess)', type: 'number', half: 1, def: 12000 },
+      { key: 'seed', label: 'Start with a typical maintenance schedule', type: 'check', def: true }] });
+    if (!r) return;
+    if (!r.name) return toast('Give the vehicle a name');
+    const nv = { id: uid(), name: r.name, yearly: r.yearly || 12000, odo: r.odo ? [{ date: todayKey(), mi: r.odo }] : [], log: [],
+      items: r.seed ? CAR_DEFAULTS.map(([name, miles, months]) => ({ id: uid(), name, miles, months, lastDate: '', lastMi: null })) : [] };
+    S.car.vehicles.push(nv); S.car.cur = nv.id; save(); return renderCar();
+  }
+  if (!v) return;
+  v.fuel ??= []; v.exp ??= [];
+  const it = v.items.find(x => x.id === b.closest('[data-item]')?.dataset.item), now = carNow(v);
+  if (act === 'c-menu') {
+    const c = await menu(v.name, [{ value: 'edit', label: 'Edit vehicle', sub: 'Name and yearly mileage guess' }, { value: 'del', label: 'Delete vehicle', danger: true }]);
+    if (c === 'edit') {
+      const r = await form({ title: 'Edit vehicle', values: v, fields: [{ key: 'name', label: 'Name' }, { key: 'yearly', label: 'Miles a year (used until Jot has two odometer readings)', type: 'number' }] });
+      if (!r) return;
+      if (r.name) v.name = r.name;
+      v.yearly = r.yearly || 12000;
+    } else if (c === 'del') {
+      if (!await ask({ title: `Delete ${v.name}?`, body: 'Its schedule and service history go with it.', ok: 'Delete', danger: true })) return;
+      S.car.vehicles = S.car.vehicles.filter(x => x !== v); S.car.cur = null;
+    } else return;
+  } else if (act === 'c-fuel') {
+    const row = v.fuel.find(x => x.id === b.dataset.id);
+    const r = await form({ title: row ? 'Edit fill-up' : 'Fill-up', ok: row ? 'Save' : 'Log it', del: !!row, values: row || {}, body: 'Fill the tank each time and add the odometer for an accurate mpg.', fields: [
+      { key: 'date', label: 'Date', type: 'date', half: 1, def: todayKey() }, { key: 'mi', label: 'Odometer (mi)', type: 'number', half: 1, def: now ? Math.round(now.est) : '' },
+      { key: 'gal', label: 'Gallons', type: 'number', half: 1 }, { key: 'cost', label: 'Total paid ($)', type: 'number', half: 1 }] });
+    if (!r) return;
+    if (r === 'delete') v.fuel = v.fuel.filter(x => x !== row);
+    else if (!r.gal && !r.cost) return toast('Add the gallons or what you paid');
+    else {
+      r.date ||= todayKey();
+      if (row) Object.assign(row, r); else v.fuel.push({ id: uid(), ...r });
+      if (r.mi && !v.odo.some(o => (o.date > r.date && o.mi < r.mi) || (o.date < r.date && o.mi > r.mi))) addOdo(v, r.date, r.mi);
+      if (!row) toast('Fill-up logged');
+    }
+  } else if (act === 'c-exp') {
+    const row = v.exp.find(x => x.id === b.dataset.id);
+    const r = await form({ title: row ? 'Edit expense' : 'Car expense', del: !!row, values: row || {}, fields: [
+      { key: 'amt', label: 'Amount ($)', type: 'number', half: 1 }, { key: 'date', label: 'Date', type: 'date', half: 1, def: todayKey() },
+      { key: 'cat', label: 'Category', type: 'select', options: CAR_CATS }, { key: 'note', label: 'What it was', ph: 'Optional' }] });
+    if (!r) return;
+    if (r === 'delete') v.exp = v.exp.filter(x => x !== row);
+    else if (!r.amt) return toast('Add an amount');
+    else { r.date ||= todayKey(); if (row) Object.assign(row, r); else v.exp.push({ id: uid(), ...r }); }
+  } else if (act === 'c-odo') {
+    const s = await ask({ title: 'Odometer', body: 'What does it read right now?', input: now ? String(Math.round(now.est)) : '', placeholder: 'Miles', ok: 'Save' });
+    const n = s && +s.replace(/[^\d.]/g, '');
+    if (!n) return;
+    addOdo(v, todayKey(), n);
+  } else if (act === 'c-log' || act === 'c-log-other') {
+    if (act === 'c-log' && !it) return;
+    const r = await form({ title: it ? it.name : 'Log other work', ok: 'Log it', fields: [
+      ...(it ? [] : [{ key: 'name', label: 'What was done', ph: 'e.g. New front brake pads' }]),
+      { key: 'date', label: 'Date', type: 'date', half: 1, def: todayKey() },
+      { key: 'mi', label: 'Odometer (mi)', type: 'number', half: 1, def: now ? Math.round(now.est) : '' },
+      { key: 'cost', label: 'Cost ($)', type: 'number', half: 1 }, { key: 'note', label: 'Notes', ph: 'Shop, parts, oil type' }] });
+    if (!r) return;
+    if (!it && !r.name) return toast('Say what was done');
+    const date = r.date || todayKey();
+    v.log.push({ id: uid(), item: it?.id || null, name: it ? it.name : r.name, date, mi: r.mi, cost: r.cost || 0, note: r.note });
+    v.log.sort((a, c) => c.date.localeCompare(a.date));
+    if (r.mi && !v.odo.some(o => o.date > date && o.mi < r.mi)) addOdo(v, date, r.mi);
+    if (it && (!it.lastDate || date >= it.lastDate)) { it.lastDate = date; it.lastMi = r.mi; }
+    toast(it ? `${it.name} logged` : 'Logged');
+  } else if (act === 'c-item' || act === 'c-item-new') {
+    if (act === 'c-item' && !it) return;
+    const r = await form({ title: it ? 'Edit item' : 'Track something new', del: !!it, values: it || {}, body: 'Leave an interval blank if it doesn’t apply. Whichever comes first counts.', fields: [
+      { key: 'name', label: 'Name', ph: 'e.g. State inspection, Differential fluid' },
+      { key: 'miles', label: 'Every (miles)', type: 'number', half: 1 }, { key: 'months', label: 'Every (months)', type: 'number', half: 1 },
+      { key: 'lastDate', label: 'Last done', type: 'date', half: 1 }, { key: 'lastMi', label: 'At mileage', type: 'number', half: 1 }] });
+    if (!r) return;
+    if (r === 'delete') v.items = v.items.filter(x => x !== it);
+    else if (!r.name) return toast('Give it a name');
+    else if (it) Object.assign(it, r);
+    else v.items.push({ id: uid(), ...r });
+  } else if (act === 'c-log-del') {
+    const l = v.log.find(x => x.id === b.closest('[data-log]').dataset.log);
+    if (!l || !await ask({ title: 'Delete this entry?', body: `${l.name}, ${fmtDate(l.date)}`, ok: 'Delete', danger: true })) return;
+    v.log = v.log.filter(x => x !== l);
+    const was = v.items.find(x => x.id === l.item);
+    if (was && was.lastDate === l.date) { const n = v.log.find(x => x.item === was.id); was.lastDate = n?.date || ''; was.lastMi = n?.mi ?? null; }
+  } else return;
+  save(); renderCar();
+}
+
+/* ---------- more ---------- */
+function renderMore() {
+  const t = todayKey(), wk = S.workouts.filter(w => w.date >= weekStart(t) && w.date <= t).length, al = carAlerts();
+  const row = (tab, name, sub, cls = '') => `<button class="hub-row" data-tab="${tab}"><span class="lr-main"><b>${name}</b><small class="${cls}">${esc(sub)}</small></span><span class="chev">›</span></button>`;
+  $('#more').innerHTML = row('work', 'Workouts', wk ? `${plural(wk, 'workout')} this week` : 'Nothing logged this week')
+    + row('docs', 'Standards', S.docs.length ? `${S.docs.length} saved: workouts, recipes, lists` : 'Workouts, recipes, grocery lists')
+    + row('car', 'Car', !curCar() ? 'Track and predict maintenance and inspections' : al.length ? `${al[0].it.name}: ${dueText(al[0].d).toLowerCase()}` : 'Nothing due in the next 30 days',
+          al.length ? (al[0].d.state === 'over' ? 'due-over' : 'due-soon') : '')
+    + `<h3 class="day-h">Backup</h3><div class="btn-row"><button class="pill" data-act="m-cloud">Cloud backup</button><span id="cloud-summary" class="muted-p" role="status"></span><button class="pill" data-act="m-export">Export backup</button><button class="pill" data-act="m-import">Import backup</button></div>`;
+  cloud?.refreshUI();
+}
+
+/* ---------- projects and businesses ---------- */
+const PM_STATUS = { active: 'Active', next: 'Up next', hold: 'On hold', done: 'Done' };
+const BIZ_STAGES = { idea: 'Idea', validate: 'Validate', setup: 'Set up', selling: 'Selling', paused: 'Paused' };
+const BIZ_MODS = { roadmap: 'Roadmap', products: 'Products', orders: 'Orders', money: 'Money', equip: 'Equipment', notes: 'Notes' };
+const BIZ_TYPES = {
+  craft: { label: 'Handmade goods', sub: 'Cutting boards, woodworking, leather: you make each piece', mods: ['roadmap', 'products', 'orders', 'money', 'equip', 'notes'],
+    notes: ['Designs and ideas', 'Materials and suppliers', 'Where to sell'],
+    steps: ['Pick 2 or 3 designs to start with', 'Make samples and photograph them', 'Work out material cost and hours per piece', 'Set prices', 'Decide where to sell (own site, Etsy, markets, local shops)',
+      'Set up a way to take payment', 'Register the business and check sales tax rules', 'Build a first batch of stock', 'First sale', 'Ask first customers for photos and reviews'] },
+  mfg: { label: 'Product manufacturing', sub: 'Design and make your own product line, like USA-made EDC tools', mods: ['roadmap', 'products', 'equip', 'money', 'orders', 'notes'],
+    notes: ['Market research', 'Suppliers and materials', 'Manufacturing process', 'Product ideas'],
+    steps: ['Research the niche: competitors, prices, gaps', 'Define the first product and what makes it different', 'CAD design', 'Prototype and test', 'Get feedback from 5 people who would buy it',
+      'Source materials and US suppliers', 'List the equipment needed and what it costs', 'Work out unit cost and target price', 'Check the FTC “Made in USA” labeling rules', 'Search patents and trademark the name',
+      'Register the business', 'Small first production run', 'Product photos and listing', 'First sale'] },
+  service: { label: 'Service or job shop', sub: 'Rapid prototyping, 3D printing, design work: you get paid per job', mods: ['roadmap', 'products', 'orders', 'money', 'equip', 'notes'],
+    prod: 'Services', ord: 'Jobs', notes: ['Capabilities and materials', 'Pricing and quoting', 'Where to find customers'],
+    steps: ['Define what you offer and who it is for', 'List your machines, materials and size limits', 'Set pricing: hourly rate, machine time, material markup', 'Make 3 sample pieces for a portfolio',
+      'Write a simple quote template', 'Set up a way to take requests (form or email)', 'Register the business and look into insurance', 'Find a first customer (local shops, engineers, makers)', 'First paid job', 'Ask for a testimonial'] },
+  online: { label: 'App or online business', sub: 'Software, content, a newsletter', mods: ['roadmap', 'products', 'money', 'notes'],
+    notes: ['Audience and competitors', 'Feature ideas'],
+    steps: ['Describe the problem and who has it', 'Talk to 5 people who have it', 'Build the smallest useful version', 'Get it in front of 10 users', 'Decide how it makes money', 'Launch', 'First paying customer'] },
+  other: { label: 'Something else', sub: 'Start with every section and switch off what you don’t need', mods: Object.keys(BIZ_MODS), notes: ['Ideas'],
+    steps: ['Describe what you sell and who buys it', 'Check that people want it', 'Work out costs and price', 'Register the business', 'First sale'] }
+};
+const ORDER_ST = { lead: 'Lead or quote', doing: 'In progress', delivered: 'Delivered', paid: 'Paid' };
+const MONEY_CATS = ['Materials', 'Equipment and tools', 'Supplies', 'Shipping', 'Fees and licenses', 'Marketing', 'Software', 'Sales', 'Other'];
+const bizLabel = (e, m) => (m === 'products' && BIZ_TYPES[e.type]?.prod) || (m === 'orders' && BIZ_TYPES[e.type]?.ord) || BIZ_MODS[m];
+const BIZ_FORMS = {
+  products: [{ key: 'name', label: 'Name' }, { key: 'price', label: 'Price ($)', type: 'number', half: 1 }, { key: 'cost', label: 'Cost to make ($)', type: 'number', half: 1 },
+    { key: 'hours', label: 'Hours of your time', type: 'number', half: 1 }, { key: 'stock', label: 'In stock', type: 'number', half: 1 }, { key: 'note', label: 'Notes', type: 'area', ph: 'Materials, sizes, options' }],
+  orders: [{ key: 'what', label: 'What they want' }, { key: 'who', label: 'Customer' }, { key: 'amt', label: 'Amount ($)', type: 'number', half: 1 }, { key: 'due', label: 'Due', type: 'date', half: 1 },
+    { key: 'status', label: 'Status', type: 'select', options: Object.entries(ORDER_ST) }, { key: 'note', label: 'Notes', type: 'area' }],
+  money: [{ key: 'kind', label: 'Type', type: 'select', options: [['out', 'Expense'], ['in', 'Income']], half: 1 }, { key: 'amt', label: 'Amount ($)', type: 'number', half: 1 },
+    { key: 'date', label: 'Date', type: 'date', half: 1 }, { key: 'cat', label: 'Category', type: 'select', options: MONEY_CATS, half: 1 }, { key: 'note', label: 'What it was' }],
+  equip: [{ key: 'name', label: 'Name' }, { key: 'cost', label: 'Cost ($)', type: 'number', half: 1 }, { key: 'have', label: 'Status', type: 'select', options: [['', 'Still need'], ['1', 'Have it']], half: 1 },
+    { key: 'note', label: 'Notes or link' }]
+};
+const BIZ_REQ = { products: 'name', orders: 'what', money: 'amt', equip: 'name' };
+let openBuild = null, bizSec = 'over';
+const buildEnt = () => openBuild && S[openBuild.kind].find(x => x.id === openBuild.id);
+const newPm = (text, extra = {}) => ({ id: uid(), text, note: '', subs: [], status: 'active', goal: '', start: todayKey(), due: '', log: [], costs: [], budget: 0,
+  created: Date.now(), updated: Date.now(), ...extra });
+const backlog = () => S.projects.find(p => /backlog/i.test(p.name));
+function bizMoney(e) { const s = k => e.money.filter(m => m.kind === k).reduce((a, m) => a + (m.amt || 0), 0); return { inc: s('in'), out: s('out') }; }
+
+function stepsHTML(e, ph) {
+  return `<ul class="subs">${e.subs.map(s => `
+    <li class="sub${s.done ? ' done' : ''}" data-sub="${s.id}">
+      <button class="check sm" data-act="b-sub-toggle" aria-label="${s.done ? 'Mark step not done' : 'Mark step done'}"></button>
+      <input class="sub-in" data-bedit="sub" value="${esc(s.text)}" aria-label="Step">
+      <button class="x plan-x" data-act="b-sub-plan" aria-label="Put this step in daily three" title="Put in daily three">${CAL}</button>
+      <button class="x" data-act="b-sub-del" aria-label="Delete step">×</button>
+    </li>`).join('')}</ul>
+    <form class="sub-add" data-form="b-sub" autocomplete="off"><input placeholder="${ph}" aria-label="${ph}" enterkeyhint="done"><button type="submit">Add</button></form>`;
+}
+function logHTML(e) {
+  return `<form class="sub-add" data-form="b-log" autocomplete="off"><input placeholder="What did you get done?" aria-label="Add an update" enterkeyhint="done"><button type="submit">Log</button></form>
+    ${e.log.length ? `<ul class="log-list">${e.log.slice(0, 40).map(l => `<li data-log="${l.id}"><span class="log-d">${fmtDay(l.date)}</span><span class="log-t">${esc(l.text)}</span>
+      <button class="x" data-act="b-log-del" aria-label="Delete update">×</button></li>`).join('')}</ul>` : `<p class="muted-p">A line each time you work on it keeps the history and shows when it has gone quiet.</p>`}`;
+}
+function pmCard(p) {
+  const done = p.subs.filter(s => s.done).length, next = p.subs.find(s => !s.done), t = todayKey();
+  const days = p.due && p.status !== 'done' ? diffDays(t, p.due) : null;
+  const quiet = p.status === 'active' ? Math.floor((Date.now() - (p.updated || p.created)) / 864e5) : 0;
+  return `<button class="card pcard" data-act="b-open" data-kind="pm" data-id="${p.id}">
+    <span class="goal-top"><b class="pc-name">${esc(p.text)}</b>${days !== null ? `<span class="pc-due${days < 0 ? ' due-over' : ''}">${days < 0 ? `${-days}d late` : days === 0 ? 'Due today' : `${days}d left`}</span>` : ''}</span>
+    ${p.subs.length ? `<span class="bar thin"><i style="width:${done / p.subs.length * 100}%"></i></span>` : ''}
+    <span class="gs-sub">${next ? `Next: ${esc(next.text)}` : p.subs.length ? 'All steps done' : 'No steps yet'}${p.subs.length ? ` · ${done}/${p.subs.length}` : ''}${quiet >= 14 ? ` · quiet for ${quiet} days` : ''}</span></button>`;
+}
+function pmList() {
+  let h = '';
+  for (const [st, name] of Object.entries(PM_STATUS)) {
+    const ps = S.pm.filter(p => p.status === st);
+    if (ps.length) h += `<h3 class="day-h">${name} · ${ps.length}</h3>` + ps.map(pmCard).join('');
+  }
+  if (!S.pm.length) h = `<p class="empty small">Notes hold the ideas. This is where the ones you’ve started live, each with its steps, target date, costs and a running log.</p>`;
+  const bl = backlog(), n = bl ? bl.items.filter(i => !i.done).length : 0;
+  h += `<button class="add-slot" data-act="b-new-pm">+ New project</button>`;
+  if (n) h += `<button class="add-slot" data-act="b-backlog">Start one from ${esc(bl.name)} (${n})</button>`;
+  return h;
+}
+function pmDetail(p) {
+  const done = p.subs.filter(s => s.done).length, spent = p.costs.reduce((a, c) => a + (c.amt || 0), 0);
+  return `<div class="card">
+      <input class="field title-in" data-bedit="text" value="${esc(p.text)}" aria-label="Project name">
+      <div class="seg">${Object.entries(PM_STATUS).map(([k, n]) => `<button data-act="b-status" data-v="${k}" aria-pressed="${p.status === k}">${n}</button>`).join('')}</div>
+      <div class="form-grid">
+        <label class="lbl">Started<input class="field" type="date" data-bedit="start" value="${p.start || ''}"></label>
+        <label class="lbl">Target date<input class="field" type="date" data-bedit="due" value="${p.due || ''}"></label>
+      </div>
+      <label class="lbl">What done looks like<textarea class="field" data-bedit="goal" placeholder="So you know when to stop">${esc(p.goal || '')}</textarea></label>
+    </div>
+    <div class="card"><div class="goal-top"><h2>Steps</h2><span class="pc-due">${p.subs.length ? `${done}/${p.subs.length} done` : ''}</span></div>
+      ${p.subs.length ? `<span class="bar thin"><i style="width:${done / p.subs.length * 100}%"></i></span>` : ''}${stepsHTML(p, 'Add a step')}</div>
+    <div class="card"><h2>Updates</h2>${logHTML(p)}</div>
+    <div class="card"><div class="goal-top"><h2>Costs</h2><span class="pc-due${p.budget && spent > p.budget ? ' due-over' : ''}">${usd(spent)}${p.budget ? ` of ${usd(p.budget)}` : ' spent'}</span></div>
+      <label class="lbl">Budget ($)<input class="field" type="number" inputmode="decimal" min="0" data-bedit="budget" value="${p.budget || ''}"></label>
+      ${p.costs.length ? `<ul class="log-list">${p.costs.map(c => `<li data-cost="${c.id}"><span class="log-t">${esc(c.text)}</span><span class="log-h">${usd(c.amt || 0)}</span>
+        <button class="x" data-act="b-cost-del" aria-label="Delete cost">×</button></li>`).join('')}</ul>` : ''}
+      <form class="sub-add" data-form="b-cost" autocomplete="off"><input placeholder="Part or purchase" aria-label="Part or purchase"><input class="amt" type="number" inputmode="decimal" step="any" min="0" placeholder="$" aria-label="Cost"><button type="submit">Add</button></form></div>
+    <div class="card"><h2>Notes</h2><textarea class="field" data-bedit="note" placeholder="Links, part numbers, measurements, ideas" aria-label="Notes">${esc(p.note || '')}</textarea></div>
+    <div class="actions"><span></span><button class="danger-btn" data-act="b-del">Delete project</button></div>`;
+}
+function bizList() {
+  let h = S.biz.map(e => {
+    const { inc, out } = bizMoney(e), next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid').length;
+    const bits = [next ? `Next: ${next.text}` : '', open ? `${plural(open, bizLabel(e, 'orders').toLowerCase().replace(/s$/, ''))} open` : '', inc || out ? `${usd(inc - out)} profit so far` : ''].filter(Boolean);
+    return `<button class="card pcard" data-act="b-open" data-kind="biz" data-id="${e.id}">
+      <span class="goal-top"><b class="pc-name">${esc(e.text)}</b><span class="tag${e.stage === 'paused' ? ' grey' : ''}">${BIZ_STAGES[e.stage] || ''}</span></span>
+      <span class="gs-sub">${esc(BIZ_TYPES[e.type]?.label || '')}</span>${bits.length ? `<span class="gs-sub">${esc(bits.join(' · '))}</span>` : ''}</button>`;
+  }).join('');
+  if (!S.biz.length) h = `<p class="empty small">Each business gets its own launch roadmap, products or services, orders, money in and out, equipment list and research notes. You choose which sections it needs when you set it up.</p>`;
+  return h + `<button class="add-slot" data-act="b-new-biz">+ New business</button>`;
+}
+const lrow = (mod, id, title, sub, val = '', cls = '') => `<button class="lrow" data-act="b-row" data-mod="${mod}" data-id="${id}"><span class="lr-main"><b>${esc(title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span><span class="lr-val ${cls}">${val}</span></button>`;
+const secHead = (e, mod, add = '+ Add') => `<div class="goal-top"><h2>${bizLabel(e, mod)}</h2><button class="soft-btn" data-act="b-row" data-mod="${mod}">${add}</button></div>`;
+function bizDetail(e) {
+  const secs = ['over', ...Object.keys(BIZ_MODS).filter(m => e.mods.includes(m))];
+  if (!secs.includes(bizSec)) bizSec = 'over';
+  const { inc, out } = bizMoney(e), sec = bizSec;
+  let h = `<nav class="chips" aria-label="Sections">${secs.map(m => `<button class="chip" data-act="b-sec" data-v="${m}" aria-pressed="${m === sec}">${m === 'over' ? 'Overview' : bizLabel(e, m)}</button>`).join('')}</nav>`;
+  if (sec === 'over') {
+    const next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid');
+    h += `<div class="card">
+        <input class="field title-in" data-bedit="text" value="${esc(e.text)}" aria-label="Business name">
+        <div class="seg">${Object.entries(BIZ_STAGES).map(([k, n]) => `<button data-act="b-stage" data-v="${k}" aria-pressed="${e.stage === k}">${n}</button>`).join('')}</div>
+        <label class="lbl">What you sell and who buys it<textarea class="field" data-bedit="pitch" placeholder="One or two sentences">${esc(e.pitch || '')}</textarea></label>
+      </div>`;
+    if (e.mods.includes('money') || e.mods.includes('roadmap') || e.mods.includes('orders')) h += `<div class="card"><h2>Where it stands</h2>
+        ${e.mods.includes('money') ? `<div class="stat-row"><div><b>${usd(inc)}</b><span>income</span></div><div><b>${usd(out)}</b><span>spent</span></div><div><b class="${inc - out < 0 ? 'due-over' : ''}">${usd(inc - out)}</b><span>profit</span></div></div>` : ''}
+        ${e.mods.includes('roadmap') ? `<p class="muted-p">${next ? `Next step: ${esc(next.text)}` : e.subs.length ? 'Roadmap finished.' : 'No roadmap steps yet.'}${e.subs.length ? ` (${e.subs.filter(s => s.done).length}/${e.subs.length})` : ''}</p>` : ''}
+        ${e.mods.includes('orders') && open.length ? `<p class="muted-p">${open.length} open ${bizLabel(e, 'orders').toLowerCase()}, ${usd(open.reduce((a, o) => a + (o.amt || 0), 0))} in the pipeline</p>` : ''}</div>`;
+    h += `<div class="card"><h2>Updates</h2>${logHTML(e)}</div>
+      <div class="actions"><button class="soft-btn" data-act="b-setup">Change type or sections</button><button class="danger-btn" data-act="b-del">Delete business</button></div>`;
+  } else if (sec === 'roadmap') {
+    const done = e.subs.filter(s => s.done).length;
+    h += `<div class="card"><div class="goal-top"><h2>Roadmap</h2><span class="pc-due">${e.subs.length ? `${done}/${e.subs.length} done` : ''}</span></div>
+      ${e.subs.length ? `<span class="bar thin"><i style="width:${done / e.subs.length * 100}%"></i></span>` : ''}${stepsHTML(e, 'Add a step')}</div>`;
+  } else if (sec === 'products') {
+    h += `<div class="card">${secHead(e, 'products')}<div class="lrows">${e.products.map(p => {
+      const m = (p.price || 0) - (p.cost || 0);
+      const bits = [p.cost != null ? `costs ${usd(p.cost)}` : '', p.price && p.cost != null ? `margin ${usd(m)} (${Math.round(m / p.price * 100)}%)` : '',
+        p.price && p.hours ? `${usd(m / p.hours)} per hour of your time` : '', p.stock != null ? `${p.stock} in stock` : ''].filter(Boolean).join(' · ');
+      return lrow('products', p.id, p.name, bits, p.price != null ? usd(p.price) : '');
+    }).join('')}</div>${e.products.length ? '' : `<p class="muted-p">Add what you sell with its price and what it costs to make. Jot works out the margin and what your time earns.</p>`}</div>`;
+  } else if (sec === 'orders') {
+    const rank = o => (o.status === 'paid' ? '1' : '0') + (o.due || '9999');
+    const list = [...e.orders].sort((a, b) => rank(a).localeCompare(rank(b)));
+    h += `<div class="card">${secHead(e, 'orders')}<div class="lrows">${list.map(o => {
+      const late = o.due && o.status !== 'paid' && o.status !== 'delivered' && o.due < todayKey();
+      return lrow('orders', o.id, o.what, [o.who, ORDER_ST[o.status], o.due ? `due ${fmtDay(o.due)}${late ? ' (late)' : ''}` : ''].filter(Boolean).join(' · '), o.amt != null ? usd(o.amt) : '', o.status === 'paid' ? 'in' : '');
+    }).join('')}</div>${e.orders.length ? '' : `<p class="muted-p">Track each one from first contact to paid. Marking it paid adds the income to Money.</p>`}</div>`;
+  } else if (sec === 'money') {
+    const list = [...e.money].sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    h += `<div class="card">${secHead(e, 'money', '+ Entry')}
+      <div class="stat-row"><div><b>${usd(inc)}</b><span>income</span></div><div><b>${usd(out)}</b><span>spent</span></div><div><b class="${inc - out < 0 ? 'due-over' : ''}">${usd(inc - out)}</b><span>profit</span></div></div>
+      <div class="lrows">${list.map(m => lrow('money', m.id, m.note || m.cat, [m.date ? fmtDay(m.date) : '', m.note ? m.cat : ''].filter(Boolean).join(' · '), (m.kind === 'in' ? '+' : '−') + usd(m.amt || 0), m.kind === 'in' ? 'in' : '')).join('')}</div>
+      ${e.money.length ? '' : `<p class="muted-p">Log what you spend getting started and what comes in.</p>`}</div>`;
+  } else if (sec === 'equip') {
+    const need = e.equip.filter(q => !q.have);
+    h += `<div class="card">${secHead(e, 'equip')}
+      ${e.equip.length ? `<p class="muted-p">${need.length ? `Still need ${plural(need.length, 'thing')}, about ${usd(need.reduce((a, q) => a + (q.cost || 0), 0))}` : 'You have everything on the list.'}</p>` : `<p class="muted-p">List the machines and tools the business needs and what they cost, then check them off as you get them.</p>`}
+      <ul class="subs">${e.equip.map(q => `<li class="sub${q.have ? ' done' : ''}" data-eq="${q.id}">
+        <button class="check sm" data-act="b-eq-toggle" aria-label="${q.have ? 'Mark as still needed' : 'Mark as owned'}"></button>
+        <button class="row-open" data-act="b-row" data-mod="equip" data-id="${q.id}"><b>${esc(q.name)}</b>${q.note ? `<small>${esc(q.note)}</small>` : ''}</button>
+        <span class="lr-val">${q.cost != null ? usd(q.cost) : ''}</span></li>`).join('')}</ul></div>`;
+  } else if (sec === 'notes') {
+    h += e.docs.map(d => `<div class="card" data-docid="${d.id}"><div class="goal-top"><input class="field title-in" data-bedit="doc-title" value="${esc(d.title)}" aria-label="Note title">
+      <button class="x" data-act="b-doc-del" aria-label="Delete note">×</button></div>
+      <textarea class="field" data-bedit="doc-body" placeholder="Write here" aria-label="${esc(d.title)}">${esc(d.body || '')}</textarea></div>`).join('')
+      + `<button class="add-slot" data-act="b-doc-new">+ Add a note</button>`;
+  }
+  return h;
+}
+function renderBuild() {
+  let e = buildEnt();
+  if (openBuild && !e) openBuild = null;
+  const seg = S.buildSeg === 'biz' ? 'biz' : 'pm';
+  $('#build-back').hidden = !e;
+  $('#build-title').textContent = e ? e.text : seg === 'pm' ? 'Projects' : 'Businesses';
+  $('#build-seg').hidden = !!e;
+  $('#build-seg').innerHTML = [['pm', 'Projects', S.pm.filter(p => p.status === 'active').length], ['biz', 'Businesses', S.biz.length]].map(([k, n, c]) =>
+    `<button data-act="b-seg" data-v="${k}" aria-pressed="${k === seg}">${n}${c ? ` · ${c}` : ''}</button>`).join('');
+  $('#build').innerHTML = e ? (openBuild.kind === 'pm' ? pmDetail(e) : bizDetail(e)) : seg === 'pm' ? pmList() : bizList();
+  document.title = `${e ? e.text : VIEWS.build.title()} · Jot`;
+}
+function showBuild(kind, id) {
+  S.tab = 'build'; S.buildSeg = kind; openBuild = { kind, id }; bizSec = 'over'; open = null;
+  save(); renderAll(); window.scrollTo(0, 0);
+}
+// a note becomes a tracked project: same id, so anything planned in the daily three stays linked
+function startFromNote(p, it) {
+  p.items = p.items.filter(x => x !== it);
+  S.pm.unshift(newPm(it.text, { id: it.id, note: it.note || '', subs: it.subs || [] }));
+  showBuild('pm', it.id); toast('Project started');
+}
+async function buildClick(act, b) {
+  if (act === 'b-seg') { S.buildSeg = b.dataset.v; save(); return renderBuild(); }
+  if (act === 'b-back') { openBuild = null; renderBuild(); return window.scrollTo(0, 0); }
+  if (act === 'b-open') return showBuild(b.dataset.kind, b.dataset.id);
+  if (act === 'b-new-pm') {
+    const name = await ask({ title: 'New project', input: '', placeholder: 'e.g. Dog collar build', ok: 'Create' });
+    if (name) { const p = newPm(name); S.pm.unshift(p); showBuild('pm', p.id); }
+    return;
+  }
+  if (act === 'b-backlog') {
+    const bl = backlog(); if (!bl) return;
+    const id = await menu(`Start from ${bl.name}`, bl.items.filter(i => !i.done).map(i => ({ value: i.id, label: i.text, sub: i.subs.length ? plural(i.subs.length, 'subtask') : '' })));
+    const it = bl.items.find(i => i.id === id);
+    if (it) startFromNote(bl, it);
+    return;
+  }
+  if (act === 'b-from-note') {
+    const { p, it } = findItem(b.closest('.item')?.dataset.id);
+    if (it && !p.virtual && await ask({ title: 'Start this as a project?', body: `“${it.text}” moves from ${p.name} to the Projects tab with its notes and subtasks.`, ok: 'Start project' })) startFromNote(p, it);
+    return;
+  }
+  if (act === 'b-new-biz') {
+    const type = await menu('What kind of business?', Object.entries(BIZ_TYPES).map(([value, t]) => ({ value, label: t.label, sub: t.sub })));
+    if (!type) return;
+    const T = BIZ_TYPES[type];
+    const r = await form({ title: `New business: ${T.label}`, ok: 'Create', body: 'Pick the sections this business needs. You can change them later.', values: Object.fromEntries(T.mods.map(m => [m, true])), fields: [
+      { key: 'text', label: 'Name', ph: 'Working name is fine' }, { key: 'pitch', label: 'What you sell and who buys it', ph: 'Optional' },
+      { key: 'stage', label: 'Where it is now', type: 'select', options: Object.entries(BIZ_STAGES).filter(([k]) => k !== 'paused') },
+      ...Object.keys(BIZ_MODS).map(m => ({ key: m, type: 'check', label: `${(m === 'products' && T.prod) || (m === 'orders' && T.ord) || BIZ_MODS[m]}` })),
+      { key: 'seed', type: 'check', label: 'Fill the roadmap with suggested launch steps', def: true }] });
+    if (!r) return;
+    if (!r.text) return toast('Give the business a name');
+    const e = { id: uid(), text: r.text, type, stage: r.stage || 'idea', pitch: r.pitch, mods: Object.keys(BIZ_MODS).filter(m => r[m]), note: '',
+      subs: r.seed ? T.steps.map(text => ({ id: uid(), text, done: false })) : [], log: [], products: [], orders: [], money: [], equip: [],
+      docs: T.notes.map(title => ({ id: uid(), title, body: '' })), created: Date.now(), updated: Date.now() };
+    S.biz.push(e); showBuild('biz', e.id);
+    return;
+  }
+  const e = buildEnt(); if (!e) return;
+  const isBiz = openBuild.kind === 'biz', sub = e.subs.find(s => s.id === b.closest('.sub')?.dataset.sub);
+  switch (act) {
+    case 'b-sec': bizSec = b.dataset.v; renderBuild(); return;
+    case 'b-status': e.status = b.dataset.v; break;
+    case 'b-stage': e.stage = b.dataset.v; break;
+    case 'b-sub-toggle': if (sub) setSubDone(e, sub, !sub.done); break;
+    case 'b-sub-del': e.subs = e.subs.filter(s => s !== sub); break;
+    case 'b-sub-plan': if (sub) await planIntoDay(e, sub); return;
+    case 'b-log-del': e.log = e.log.filter(l => l.id !== b.closest('[data-log]').dataset.log); break;
+    case 'b-cost-del': e.costs = e.costs.filter(c => c.id !== b.closest('[data-cost]').dataset.cost); break;
+    case 'b-eq-toggle': { const q = e.equip.find(x => x.id === b.closest('[data-eq]').dataset.eq); if (q) q.have = q.have ? '' : '1'; break; }
+    case 'b-doc-new': {
+      const title = await ask({ title: 'New note', input: '', placeholder: 'e.g. Competitors, Pricing', ok: 'Add' });
+      if (!title) return;
+      e.docs.push({ id: uid(), title, body: '' });
+      break;
+    }
+    case 'b-doc-del': {
+      const d = e.docs.find(x => x.id === b.closest('[data-docid]').dataset.docid);
+      if (!d || !await ask({ title: `Delete ${d.title}?`, ok: 'Delete', danger: true })) return;
+      e.docs = e.docs.filter(x => x !== d);
+      break;
+    }
+    case 'b-row': {
+      const mod = b.dataset.mod, row = e[mod].find(x => x.id === b.dataset.id), label = bizLabel(e, mod);
+      const r = await form({ title: row ? `Edit ${label.toLowerCase()}` : `Add to ${label.toLowerCase()}`, fields: BIZ_FORMS[mod], del: !!row,
+        values: row || (mod === 'money' ? { kind: 'out', date: todayKey() } : mod === 'orders' ? { status: 'lead' } : {}) });
+      if (!r) return;
+      if (r === 'delete') { e[mod] = e[mod].filter(x => x !== row); break; }
+      if (!r[BIZ_REQ[mod]]) return toast(mod === 'money' ? 'Add an amount' : 'Give it a name');
+      const target = row ? Object.assign(row, r) : { id: uid(), ...r };
+      if (!row) e[mod].unshift(target);
+      if (mod === 'orders' && target.status === 'paid' && !target.booked && target.amt && e.mods.includes('money')) {
+        e.money.unshift({ id: uid(), kind: 'in', amt: target.amt, date: todayKey(), cat: 'Sales', note: [target.what, target.who].filter(Boolean).join(', ') });
+        target.booked = true; toast('Paid. Added to Money as income');
+      }
+      break;
+    }
+    case 'b-setup': {
+      const r = await form({ title: 'Type and sections', values: { type: e.type, ...Object.fromEntries(e.mods.map(m => [m, true])) }, body: 'Switching a section off hides it. Nothing in it is deleted.', fields: [
+        { key: 'type', label: 'Kind of business', type: 'select', options: Object.entries(BIZ_TYPES).map(([k, t]) => [k, t.label]) },
+        ...Object.keys(BIZ_MODS).map(m => ({ key: m, type: 'check', label: bizLabel(e, m) }))] });
+      if (!r) return;
+      e.type = r.type; e.mods = Object.keys(BIZ_MODS).filter(m => r[m]);
+      break;
+    }
+    case 'b-del':
+      if (!await ask({ title: `Delete ${e.text}?`, body: isBiz ? 'Its roadmap, orders, money and notes go with it.' : 'Its steps, updates and costs go with it.', ok: 'Delete', danger: true })) return;
+      S[openBuild.kind] = S[openBuild.kind].filter(x => x !== e); openBuild = null;
+      save(); renderBuild(); toast('Deleted'); return;
+    default: return;
+  }
+  e.updated = Date.now(); save(); renderBuild();
+}
+// text fields save as you type without re-rendering, so focus stays put
+$('#build').addEventListener('input', ev => {
+  const el = ev.target, k = el.dataset.bedit, e = buildEnt();
+  if (!k || !e || el.type === 'date') return;
+  const v = el.value, relink = (match, text) => { for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s && match(s)) s.task = text; };
+  if (k === 'text') { if (!v.trim()) return; e.text = v.trim(); $('#build-title').textContent = e.text; relink(s => s.noteId === e.id && !s.subId, e.text); }
+  else if (k === 'sub') { const s = e.subs.find(x => x.id === el.closest('.sub').dataset.sub); if (!s || !v.trim()) return; s.text = v.trim(); relink(x => x.subId === s.id, s.text); }
+  else if (k === 'budget') e.budget = Math.max(0, +v || 0);
+  else if (k === 'doc-title' || k === 'doc-body') {
+    const d = e.docs.find(x => x.id === el.closest('[data-docid]').dataset.docid); if (!d) return;
+    if (k === 'doc-body') d.body = v; else if (v.trim()) d.title = v.trim();
+  }
+  else e[k] = v;
+  e.updated = Date.now(); save();
+});
+$('#build').addEventListener('change', ev => {
+  const el = ev.target, k = el.dataset.bedit, e = buildEnt();
+  if (!k || !e) return;
+  if (el.type === 'date') { e[k] = el.value; e.updated = Date.now(); save(); }
+  else if (k === 'budget') { save(); renderBuild(); }
+});
+$('#build').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const f = ev.target, e = buildEnt(), ins = [...f.querySelectorAll('input')], text = ins[0].value.trim();
+  if (!e || !text) return;
+  if (f.dataset.form === 'b-sub') e.subs.push({ id: uid(), text, done: false });
+  else if (f.dataset.form === 'b-log') e.log.unshift({ id: uid(), date: todayKey(), text });
+  else if (f.dataset.form === 'b-cost') e.costs.push({ id: uid(), text, amt: +ins[1].value || 0 });
+  else return;
+  e.updated = Date.now(); save(); renderBuild();
+  document.querySelector(`#build [data-form="${f.dataset.form}"] input`)?.focus();
+});
+$('#build').addEventListener('keydown', ev => {
+  if (ev.key === 'Enter' && ev.target.matches('.title-in, .sub-in, [data-bedit="budget"]')) { ev.preventDefault(); ev.target.blur(); }
+});
+
+/* ---------- voice notes ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, voiceBase = '';
+const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
+// short dictation is the title; long dictation gets a title from its first clause and keeps the full text as the note
+function autoTitle(raw) {
+  const text = raw.replace(/\s+/g, ' ').trim();
+  if (text.split(' ').length <= 9) return { title: capFirst(text.replace(/[.!?]+$/, '')), note: '' };
+  const s = text.replace(/^((ok(ay)?|so|um+|uh+|hey|well|alright|and|yeah)[,.]?\s+)+/i, '')
+    .replace(/^(note to self[,:]?|remind me (to|that)|remember to|don'?t forget to|i (need|want|have|should|would like) to|i should|i need|make sure (to|i)|i was thinking( that| about)?|i'?m thinking( that| about)?|idea[:,]?)\s+/i, '');
+  let w = s.split(/[.!?]\s|[,;:]\s|\s(?:because|so that|so i|and then|which|but)\s/i)[0].split(' ');
+  if (w.length < 3) w = s.split(' ');
+  w = w.slice(0, 8);
+  while (w.length > 3 && /^(and|or|the|a|an|to|of|for|with|in|on|at|that|is|my|i|so|from|into|like|where|when|can|could|it|this)$/i.test(w.at(-1))) w.pop();
+  return { title: capFirst(w.join(' ').replace(/[.,!?;:]+$/, '')), note: capFirst(text) };
+}
+function voiceText(v) {
+  if (v !== undefined) $('#voice-text').value = v;
+  const t = $('#voice-text').value.trim();
+  $('#voice-title-row').hidden = !t;
+  $('#voice-title').textContent = t ? autoTitle(t).title : '';
+}
+function voiceStatus(msg, on = false) { $('#voice-status').textContent = msg; $('#voice-pulse').classList.toggle('on', on); $('#voice-mic').textContent = on ? 'Stop' : 'Keep talking'; }
+const voiceLanguage = navigator.language || 'en-US';
+const voiceOptions = { langs: [voiceLanguage], processLocally: true };
+let voiceOnDevice = false, voiceOpening = 0;
+async function prepareVoice(download = false) {
+  const opening = ++voiceOpening;
+  let availability = 'unavailable';
+  const button = $('#voice-download');
+  button.hidden = true;
+  if (SR?.available && SR?.install && 'processLocally' in SR.prototype) {
+    try {
+      if (download) {
+        voiceStatus('Downloading offline dictation…');
+        await SR.install(voiceOptions);
+      }
+      availability = await SR.available(voiceOptions);
+    } catch (e) {}
+  }
+  if (opening !== voiceOpening || !$('#voice').open) return;
+  voiceOnDevice = availability === 'available';
+  button.hidden = availability !== 'downloadable';
+  $('#voice-mic').hidden = !SR || (!navigator.onLine && !voiceOnDevice);
+  if (SR && (navigator.onLine || voiceOnDevice)) voiceListen();
+  else {
+    voiceStatus(navigator.onLine ? 'Type or use your keyboard’s dictation.'
+      : 'Offline dictation needs a supported browser and a downloaded language pack. You can type and save here.');
+    $('#voice-text').focus();
+  }
+}
+function voiceListen() {
+  if (!SR || (!navigator.onLine && !voiceOnDevice)) return;
+  try { rec?.abort(); } catch (e) {}
+  voiceBase = $('#voice-text').value.trim();
+  const me = rec = new SR();
+  let err = '';
+  me.lang = voiceLanguage;
+  if ('processLocally' in me) me.processLocally = voiceOnDevice;
+  me.interimResults = true; me.continuous = false;
+  me.onstart = () => voiceStatus('Listening. It stops when you pause.', true);
+  me.onresult = ev => {
+    if (rec !== me) return;
+    const said = [...ev.results].map(r => r[0].transcript).join(' ').trim();
+    voiceText(!voiceBase ? capFirst(said) : voiceBase + (/[.!?]$/.test(voiceBase) ? ' ' : '. ') + capFirst(said));
+  };
+  me.onerror = ev => { err = ev.error; };
+  me.onend = () => {
+    if (rec !== me) return;
+    rec = null;
+    voiceStatus(err === 'not-allowed' || err === 'service-not-allowed' ? 'The microphone is blocked. Allow it for this site in your browser settings, or type here.'
+      : err === 'network' ? 'Dictation needs an internet connection. You can still type, or use the mic on your keyboard.'
+      : err === 'no-speech' ? 'Didn’t catch anything. Tap Keep talking to try again.'
+      : $('#voice-text').value.trim() ? 'Got it. Save, fix the text, or keep talking to add more.' : 'Tap Keep talking to start.');
+  };
+  try { me.start(); } catch (e) { rec = null; voiceStatus('Tap Keep talking to start.'); }
+}
+function openVoice() {
+  voiceText('');
+  $('#voice-mic').hidden = !SR;
+  voiceStatus(SR ? 'Starting…' : 'This browser can’t listen on its own. Use the mic on your keyboard here and Jot will still title the note.');
+  $('#voice').showModal();
+  prepareVoice();
+}
+function voiceClick(act) {
+  if (act === 'v-open') return openVoice();
+  if (act === 'v-mic') { if (rec) rec.stop(); else voiceListen(); return; }
+  if (act === 'v-cancel') return $('#voice').close();
+  if (act === 'v-save') {
+    const text = $('#voice-text').value.trim();
+    if (!text) return toast('Nothing to save yet');
+    const { title, note } = autoTitle(text), p = proj(), it = { id: uid(), text: title, note, done: false, subs: [], created: Date.now() };
+    p.items.unshift(it); open = note ? it.id : null; S.tab = 'notes';
+    $('#voice').close(); save(); renderAll(); toast(`Added “${title}” to ${p.name}`);
+  }
+}
+$('#voice-download').addEventListener('click', () => {
+  try { rec?.abort(); } catch (e) {}
+  rec = null;
+  prepareVoice(true);
+});
+$('#voice').addEventListener('close', () => { voiceOpening++; try { rec?.abort(); } catch (e) {} rec = null; });
+$('#voice-text').addEventListener('input', () => voiceText());
+
+document.addEventListener('click', ev => {
+  const b = ev.target.closest('[data-act]'); if (!b) return;
+  const act = b.dataset.act, pre = act.slice(0, 2);
+  if (pre === 'c-') carClick(act, b);
+  else if (pre === 'b-') buildClick(act, b);
+  else if (pre === 'v-') voiceClick(act);
+  else if (act === 'm-cloud') cloud?.open();
+  else if (act === 'm-export') exportBackup();
+  else if (act === 'm-import') $('#file').click();
+});
+
+/* ---------- start ---------- */
+const params = new URLSearchParams(location.search);
+if (params.has('add')) S.tab = 'notes';
+else if (params.has('today')) S.tab = 'today';
+else if (params.has('dictate')) { S.tab = 'notes'; setTimeout(openVoice, 300); }
+else if (VIEWS[params.get('tab')]) S.tab = params.get('tab');
+migrateGoals();
+renderAll();
+if (params.has('add')) setTimeout(() => $('#q').focus(), 150);
+navigator.storage?.persist?.().catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(console.error);
+if (localVersion.revision) save();
+else lastLocalData = JSON.stringify(cloudData(S));
+window.addEventListener('storage', event => {
+  if (event.key === KEY && event.newValue !== lastLocalWrite) {
+    toast('Jot changed in another tab. Reopen this tab to see the latest copy.');
+  }
+});
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.tab === 'today') renderToday(); });
+</script>
+<script src="cloud.js"></script>
+</body>
+</html>
