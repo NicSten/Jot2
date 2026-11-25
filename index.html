@@ -325,14 +325,6 @@ summary.day-h{padding:4px 0}
 .big-fold{margin-top:16px}
 .big-fold>summary{font-size:1.08rem;font-weight:700;padding:6px 4px}
 .big-fold>summary small{font-weight:500;color:var(--muted);font-size:.85rem}
-.proj-fold{margin-top:10px}
-.proj-fold>summary{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;font-weight:650}
-.proj-fold[open]>summary{border-radius:14px 14px 0 0;border-bottom:0}
-.proj-fold>.list{border-radius:0 0 14px 14px}
-.proj-fold>.fold-body{border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;background:var(--surface);padding:4px 14px 12px}
-.proj-fold .n{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
-.proj-fold .fold-body .list{border-radius:12px}
-.proj-fold .section-toggle{margin:10px 0 6px}
 /* quote of the day */
 .quote{display:block;width:100%;text-align:left;margin:8px 0 12px;border:0;border-left:3px solid var(--green);background:none;padding:4px 4px 4px 12px;color:var(--ink)}
 .quote q{display:block;font-style:italic;line-height:1.45;quotes:'“' '”'}
@@ -401,9 +393,10 @@ summary.day-h{padding:4px 0}
 <section id="v-notes" hidden>
   <header><div class="wrap">
     <div class="top">
-      <h1 id="title">Notes</h1>
+      <h1 id="title">Inbox</h1>
       <button class="icon-btn" data-act="menu" aria-label="Project options">⋯</button>
     </div>
+    <nav class="chips" id="chips" aria-label="Projects"></nav>
   </div></header>
   <main><div class="wrap" id="main"></div></main>
 </section>
@@ -808,11 +801,6 @@ document.addEventListener('toggle', e => {
   const key = d.dataset.fold, collapsed = !d.open;
   if (folded(key, d.dataset.def === '1') === collapsed) return; // rendered this way, not a tap
   S.fold[key] = collapsed;
-  // opening a notes project makes it the one quick add files into
-  if (key.startsWith('n:') && !collapsed && S.current !== key.slice(2)) {
-    S.fold['n:' + S.current] ??= false; // the previous project stays as it was on screen
-    S.current = key.slice(2); save(); return renderNotes();
-  }
   save();
 }, true);
 
@@ -1316,28 +1304,27 @@ function detailHTML(i, p = proj()) {
     </div>
   </div>`;
 }
-// every notes project is a collapsible section; the open one you touched last is where quick add files new notes
 function renderNotes() {
-  const cur = proj(); S.current = cur.id;
-  $('#q').placeholder = `Add to ${cur.name}`;
+  const p = proj(); S.current = p.id;
+  $('#title').textContent = p.name;
+  $('#q').placeholder = `Add to ${p.name}`;
+  $('#chips').innerHTML = S.projects.map(x => {
+    const n = x.items.filter(i => !i.done).length;
+    return `<button class="chip" data-proj="${x.id}" aria-pressed="${x.id === p.id}">${esc(x.name)}${n ? `<span class="n">${n}</span>` : ''}</button>`;
+  }).join('') + `<button class="chip add" data-act="new-project">+ Project</button>`;
+  // high priority first, low priority last
+  const todo = byPri(p.items.filter(i => !i.done)), done = p.items.filter(i => i.done);
   let h = '';
-  for (const p of S.projects) {
-    const todo = byPri(p.items.filter(i => !i.done)), done = p.items.filter(i => i.done);
-    const isCur = p.id === cur.id;
-    let body = '';
-    if (!p.items.length) body = `<p class="muted-p">Nothing here yet. ${isCur ? 'Type below and press Enter to add a note.' : 'Open this one and type below to add to it.'}</p>`;
-    else {
-      body += todo.length ? `<ul class="list">${todo.map(i => itemHTML(i, p)).join('')}</ul>` : `<p class="muted-p">Everything here is done.</p>`;
-      if (done.length) {
-        body += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
-        if (S.showDone) body += `<ul class="list">${done.map(i => itemHTML(i, p)).join('')}</ul><button class="clear-done" data-act="clear-done" data-pid="${p.id}">Clear done items</button>`;
-      }
+  if (!p.items.length) h = `<p class="empty">Nothing in ${esc(p.name)} yet.<br>Type below and press Enter to add a note.</p>`;
+  else {
+    h += todo.length ? `<ul class="list">${todo.map(i => itemHTML(i, p)).join('')}</ul>` : `<p class="empty small">Everything here is done.</p>`;
+    if (done.length) {
+      h += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
+      if (S.showDone) h += `<ul class="list">${done.map(i => itemHTML(i, p)).join('')}</ul><button class="clear-done" data-act="clear-done" data-pid="${p.id}">Clear done items</button>`;
     }
-    h += fold('n:' + p.id, `<span class="grow">${esc(p.name)}${todo.length ? ` <span class="n">· ${todo.length}</span>` : ''}</span>${isCur ? '<span class="tag">Adding here</span>' : ''}`,
-      `<div class="fold-body">${body}</div>`, { cls: 'proj-fold', def: !isCur });
   }
-  h += `<button class="add-slot" data-act="new-project">+ Project</button>`;
   $('#main').innerHTML = h;
+  $('.chip[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 }
 
 function renderOrder() {
@@ -1580,7 +1567,7 @@ function renderDocs() {
 
 const VIEWS = {
   today: { el: '#v-today', render: () => renderToday(), title: () => 'Daily three' },
-  notes: { el: '#v-notes', render: () => renderNotes(), title: () => 'Notes' },
+  notes: { el: '#v-notes', render: () => renderNotes(), title: () => proj().name },
   work: { el: '#v-work', render: () => renderWork(), title: () => 'Workouts' },
   goals: { el: '#v-goals', render: () => renderGoals(), title: () => 'Goals' },
   docs: { el: '#v-docs', render: () => renderDocs(), title: () => 'Standards' },
@@ -1824,7 +1811,7 @@ document.addEventListener('click', async e => {
     }
     case 'new-project': {
       const name = await ask({ title: 'New project', input: '', placeholder: 'Project name', ok: 'Create' });
-      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; S.fold['n:' + np.id] = false; open = null; save(); renderNotes(); }
+      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; open = null; save(); renderNotes(); }
       break;
     }
     case 'menu': {
