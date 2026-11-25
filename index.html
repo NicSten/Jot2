@@ -341,6 +341,42 @@ summary.day-h{padding:4px 0}
 .pri-hi{color:var(--danger);font-weight:650}
 .pri-lo{color:var(--muted)}
 .item.low .t{color:var(--muted)}
+/* day planner */
+#daily-seg{margin-top:8px}
+.goal-day{display:block;margin-top:12px}
+.goal-day span{display:block;font-size:.84rem;font-weight:650;color:var(--green-ink);margin:0 4px 4px}
+.goal-day .field{font-size:1.05rem;font-weight:600;background:#fff}
+.flow-head{display:flex;align-items:center;justify-content:space-between;margin:20px 4px 8px}
+.flow-head h2{margin:0;font-size:1rem}
+.flow-head .soft-btn[aria-pressed="true"]{background:var(--green);color:#fff}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;position:relative}
+.flow::before{content:'';position:absolute;left:25px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:1px}
+.flow-li{display:flex;align-items:center;gap:8px;position:relative}
+.flow-li>.slot,.flow-li>.fitem{flex:1;min-width:0}
+.rail{flex:none;width:52px;text-align:center;position:relative;z-index:1}
+.rail b{display:inline-block;background:var(--bg);color:var(--ink);font-size:.74rem;font-weight:700;padding:3px 0;line-height:1.2;font-variant-numeric:tabular-nums}
+.rail:empty::after{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--bg);border:2px solid #A9B3A5}
+.flow-li:has(.is-done) .rail:empty::after,.flow-li:has(.fitem.done) .rail:empty::after{background:var(--green);border-color:var(--green)}
+.d3{color:var(--green-ink);font-weight:700}
+.fitem{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.fitem-t{flex:1;min-width:0;border:0;background:none;text-align:left;padding:6px 0;font-size:.98rem;overflow-wrap:anywhere}
+.fitem-t small{display:inline-block;margin-left:8px;color:var(--green-ink);font-size:.72rem;font-weight:650}
+.fitem.done .fitem-t{color:var(--muted);text-decoration:line-through}
+.fl-move{display:flex;flex-direction:column;flex:none;order:3}
+.fl-move .x{width:34px;height:28px}
+.now-line{display:flex;align-items:center;gap:8px;color:var(--danger);font-size:.75rem;font-weight:700;position:relative;z-index:1}
+.now-line::after{content:'';flex:1;height:2px;background:var(--danger);opacity:.6;border-radius:1px}
+.now-line span{background:var(--bg);padding-right:2px}
+.flow-add{display:flex;gap:8px}
+.flow-add .add-slot{flex:1}
+.focus .opts{margin-top:4px}
+.muted-p.small{font-size:.78rem;margin-top:8px}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;text-align:center;font-size:.72rem;color:var(--muted);font-weight:650}
+.cell.day{color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.85rem;font-weight:600;border:1px solid transparent}
+.cell.day.ev{border-color:var(--event-line)}
+.cell .dot,.grid-key .dot{flex:none;display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink)}
+.key-sw.g{background:var(--green)}
+.ev-row small{display:block;color:var(--muted);font-size:.76rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -356,6 +392,7 @@ summary.day-h{padding:4px 0}
       <button class="icon-btn" data-act="today-menu" aria-label="Options">⋯</button>
     </div>
     <div class="sub-head"><span id="day-date"></span><span class="streak" id="streak"></span></div>
+    <div class="seg" id="daily-seg" role="group" aria-label="View"></div>
   </div></header>
   <main><div class="wrap" id="today"></div></main>
 </section>
@@ -681,7 +718,7 @@ const fresh = () => ({
   days: {}, repeats: [], menus: JSON.parse(JSON.stringify(DEFAULT_MENUS)), tab: 'today',
   custom: [], workouts: [], docs: [], docCat: 'all', events: [],
   car: { vehicles: [], cur: null }, pm: [], biz: [], buildSeg: 'pm',
-  goals: [feGoal()], books: [], fold: {}
+  goals: [feGoal()], books: [], fold: {}, focus: []
 });
 let localVersion = { revision: null, owner: null, base: null, synced: null, attempt: null };
 let cloud = null;
@@ -928,21 +965,72 @@ function dayLabel(k) {
   if (d === -1) return 'Yesterday';
   return parse(k).toLocaleDateString(undefined, { weekday: 'long' });
 }
-function renderToday() {
-  const k = viewDay;
-  $('#day-title').textContent = dayLabel(k);
-  $('#day-date').textContent = parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const st = streak();
-  $('#streak').textContent = st ? `${st}-day streak` : '';
+/* ---------- day planner ---------- */
+// A day's flow is one ordered list: the Daily 3 slots (they drive the streak) plus extra items you add.
+// Items can have a time (scheduled things); a timed item is placed among the others by time, and you can reorder by hand.
+// Day data: S.days[k]._goal (today's goal), _items [{ id, text, time, done }], _order [keys]. Slot keys are 'am', 'pmBig', …; item keys are 'i:<id>'.
+let dailySeg = 'day', calMonth = null, flowReorder = false;
+// rough time of day for each slot, so timed items fall in a sensible place around them
+const SLOT_TIME = { am: '06:00', wkBig: '12:00', pmBig: '18:00', pmSmall: '20:00' };
+const dayItems = k => S.days[k]?._items || [];
+function keyTime(k, key) {
+  if (key.startsWith('i:')) return dayItems(k).find(i => 'i:' + i.id === key)?.time || '';
+  return SLOT_TIME[key] || '';
+}
+function placeByTime(k, keys, key) {
+  const t = keyTime(k, key);
+  if (!t) return keys.push(key);
+  let j = keys.findIndex(x => keyTime(k, x) > t);
+  if (j < 0) { const last = keys.map(x => keyTime(k, x)).findLastIndex(x => x && x <= t); j = last < 0 ? keys.length : last + 1; }
+  keys.splice(j, 0, key);
+}
+function flowKeys(k) {
+  const all = [...slotsFor(k).map(s => s.key), ...dayItems(k).map(i => 'i:' + i.id)];
+  const keys = (S.days[k]?._order || []).filter(x => all.includes(x));
+  for (const x of all) if (!keys.includes(x)) placeByTime(k, keys, x);
+  return keys;
+}
+// writing the order down freezes it, so later additions slot in around what you arranged
+const saveOrder = (k, keys) => { (S.days[k] ??= {})._order = keys; };
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
+function slotRow(k, s, rail) {
+  const e = getSlot(k, s.key);
+  const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
+  let note = '';
+  if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : p.virtual ? `Worktime on ${it.text}` : `From ${p.name}`; }
+  else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
+  return `<li class="flow-li" data-key="${s.key}">${rail}<section class="slot${e.task && e.done ? ' is-done' : ''}">
+      <div class="slot-main">
+        <span class="slot-when"><b class="d3">Daily 3</b> · ${s.when}</span>
+        <button class="slot-task${e.task ? '' : ' empty-task'}" data-act="pick" data-slot="${s.key}">${e.task ? esc(e.task) : 'Pick a task'}</button>
+        ${note ? `<span class="slot-note">${esc(note)}</span>` : ''}
+      </div>
+      <button class="breaker" role="switch" aria-checked="${!!(e.task && e.done)}" data-act="flip" data-slot="${s.key}" aria-label="${s.when} task complete"${e.task ? '' : ' disabled'}>
+        <span class="bk-lbl bk-on">Complete</span><span class="bk-slot"><span class="bk-handle"></span></span><span class="bk-lbl bk-off">Not</span>
+      </button>
+    </section></li>`;
+}
+function itemRow(it, rail) {
+  return `<li class="flow-li" data-key="i:${it.id}">${rail}<div class="fitem${it.done ? ' done' : ''}">
+      <button class="check" data-act="fl-check" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}"></button>
+      <button class="fitem-t" data-act="fl-edit" data-id="${it.id}">${esc(it.text)}${it.focus ? '<small>Focus</small>' : ''}</button>
+    </div></li>`;
+}
+function dayView(k) {
   let h = quoteHTML(k);
   const t0 = todayKey(), y = addDays(t0, -1);
   if (k === t0) {
     const ys = dayStats(y), planned = slotsFor(y).some(s => getSlot(y, s.key).task);
     if (planned && ys.done < ys.total && !S.days[y]?._reviewed)
       h += `<div class="catchup"><span>Yesterday: ${ys.done} of ${ys.total} marked</span><button data-act="goto" data-day="${y}">Mark yesterday</button></div>`;
-  } else if (k < t0) {
-    h += `<div class="catchup"><span>You're looking at ${dayLabel(k).toLowerCase() === 'yesterday' ? 'yesterday' : parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span><button data-act="goto" data-day="${t0}">Back to today</button></div>`;
+  } else {
+    h += `<div class="catchup"><span>You're ${k < t0 ? 'looking back at' : 'planning'} ${['yesterday', 'tomorrow'].includes(dayLabel(k).toLowerCase()) ? dayLabel(k).toLowerCase() : parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span><button data-act="goto" data-day="${t0}">Back to today</button></div>`;
   }
   const evs = eventsOn(k), ds = dayStats(k);
   for (const { ev, occ } of evs) {
@@ -950,34 +1038,44 @@ function renderToday() {
     const info = [len > 1 ? `Day ${diffDays(occ.start, k) + 1} of ${len}` : 'All day', ev.pause ? 'Tasks paused' : ''].filter(Boolean).join(' · ');
     h += `<button class="event-banner" data-act="ev-edit" data-ev="${ev.id}"><b>${esc(ev.title)}</b><span>${info}</span></button>`;
   }
+
+  // the goal of the day
+  h += `<label class="goal-day"><span>${k === t0 ? 'Today’s goal' : 'Goal for the day'}</span>
+    <input class="field" data-day-goal value="${esc(S.days[k]?._goal || '')}" placeholder="What would make ${k === t0 ? 'today' : 'this day'} a win?" enterkeyhint="done"></label>`;
+
+  // the flow of the day
   const hideSlots = ds.off && !S.days[k]?._show;
-  if (hideSlots) h += `<button class="add-slot" data-act="ev-show">Plan tasks anyway</button>`;
-  h += `<div class="slots"${hideSlots ? ' hidden' : ''}>`;
-  for (const s of slotsFor(k)) {
-    const e = getSlot(k, s.key);
-    const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
-    let note = '';
-    if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : p.virtual ? `Worktime on ${it.text}` : `From ${p.name}`; }
-    else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
-    h += `<section class="slot${e.task && e.done ? ' is-done' : ''}">
-      <div class="slot-main">
-        <span class="slot-when">${s.when}</span>
-        <button class="slot-task${e.task ? '' : ' empty-task'}" data-act="pick" data-slot="${s.key}">${e.task ? esc(e.task) : 'Pick a task'}</button>
-        ${note ? `<span class="slot-note">${esc(note)}</span>` : ''}
-      </div>
-      <button class="breaker" role="switch" aria-checked="${!!(e.task && e.done)}" data-act="flip" data-slot="${s.key}" aria-label="${s.when} task complete"${e.task ? '' : ' disabled'}>
-        <span class="bk-lbl bk-on">Complete</span><span class="bk-slot"><span class="bk-handle"></span></span><span class="bk-lbl bk-off">Not</span>
-      </button>
-    </section>`;
-  }
+  const slots = slotsFor(k), keys = flowKeys(k), items = dayItems(k);
+  const itemDone = items.filter(i => i.done).length;
+  h += `<div class="flow-head"><h2>Flow of the day</h2>${keys.length > 1 ? `<button class="soft-btn" data-act="fl-reorder" aria-pressed="${flowReorder}">${flowReorder ? 'Done' : 'Reorder'}</button>` : ''}</div>`;
+  if (hideSlots) h += `<button class="add-slot" data-act="ev-show">Plan Daily 3 tasks anyway</button>`;
+  h += `<ol class="flow${flowReorder ? ' reordering' : ''}">`;
+  const now = k === t0 ? nowTime() : null;
+  let nowShown = !now || !keys.some(x => x.startsWith('i:') && keyTime(k, x));
+  keys.forEach((key, i) => {
+    const s = slots.find(x => x.key === key), it = !s && items.find(x => 'i:' + x.id === key);
+    if (s && hideSlots) return;
+    const time = it ? it.time : '';
+    // a line for "now" in today's flow, just before the first scheduled item still ahead
+    if (!nowShown && time && time > now) { h += `<li class="now-line"><span>Now · ${fmtTime(now)}</span></li>`; nowShown = true; }
+    const arrows = flowReorder ? `<span class="fl-move"><button class="x" data-act="fl-move" data-key="${key}" data-d="-1" aria-label="Move up"${i ? '' : ' disabled'}>↑</button><button class="x" data-act="fl-move" data-key="${key}" data-d="1" aria-label="Move down"${i < keys.length - 1 ? '' : ' disabled'}>↓</button></span>` : '';
+    const rail = `<span class="rail">${time ? `<b>${fmtTime(time)}</b>` : ''}</span>${arrows}`;
+    h += s ? slotRow(k, s, rail) : itemRow(it, rail);
+  });
+  if (!nowShown) h += `<li class="now-line"><span>Now · ${fmtTime(now)}</span></li>`;
+  h += `</ol>`;
+  h += `<div class="flow-add"><button class="add-slot" data-act="fl-add">+ Add to the day</button>${hideSlots ? '' : `<button class="add-slot" data-act="slot-add">+ Daily 3 slot</button>`}</div>`;
+  h += `<p class="progress-line">${ds.off ? 'Day off. Your streak is safe.' : ds.done === ds.total ? 'Daily 3 all done. Nice work.' : `Daily 3: ${ds.done} of ${ds.total} done`}${items.length ? ` · Other: ${itemDone} of ${items.length}` : ''}</p>`;
+
+  // ongoing focus: carries over every day until you change it
+  h += `<div class="grid-wrap focus"><div class="goal-top"><h2>Focus</h2><button class="soft-btn" data-act="fo-add">+ Focus</button></div>`;
+  h += S.focus.length ? `<div class="opts">${S.focus.map(f => `<button class="opt" data-act="fo-open" data-id="${f.id}">${esc(f.text)}</button>`).join('')}</div><p class="muted-p small">Tap one to add it to the day.</p>`
+    : `<p class="muted-p">The bigger things you’re working on right now, like a study plan, fitness or a build. They stay here every day.</p>`;
   h += `</div>`;
-  if (!hideSlots) h += `<button class="add-slot" data-act="slot-add">+ Add a task</button>`;
-  h += `<p class="progress-line">${ds.off ? 'Day off. Your streak is safe.' : ds.done === ds.total ? 'All done. Nice work.' : `${ds.done} of ${ds.total} done`}</p>`;
 
   const due = carAlerts();
   if (due.length) h += `<button class="goal-strip" data-tab="car"><span class="gs-top"><b>${esc(due[0].v.name)}</b><span>${due.length} due</span></span>
     <span class="gs-sub ${due[0].d.state === 'over' ? 'due-over' : 'due-soon'}">${esc(due[0].it.name)} · ${esc(dueText(due[0].d).toLowerCase())}</span></button>`;
-
   for (const g of S.goals) {
     const t = g.trackers.find(x => trackStats(x).pct !== null), st = t && trackStats(t);
     if (!g.date && !t) continue;
@@ -986,29 +1084,117 @@ function renderToday() {
     h += `<button class="goal-strip" data-tab="goals"><span class="gs-top"><b>${esc(g.name)}</b><span>${left}</span></span>
       ${t ? `<span class="gs-sub">${esc(t.name)} · ${esc(st.summary)}</span><span class="bar thin"><i style="width:${st.pct}%"></i></span>` : ''}</button>`;
   }
+  return h;
+}
 
-  // upcoming and ongoing events
-  const t = todayKey();
-  const up = S.events.map(ev => ({ ev, occ: nextOccurrence(ev, t) })).filter(x => x.occ && diffDays(t, x.occ.start) <= 120)
-    .sort((a, b) => a.occ.start.localeCompare(b.occ.start)).slice(0, 6);
-  h += `<div class="grid-wrap"><div class="goal-top"><h2>Events</h2><button class="soft-btn" data-act="ev-new">+ Event</button></div>`;
-  h += up.length ? `<div class="ev-list">${up.map(({ ev, occ }) => {
-    const n = diffDays(t, occ.start);
-    const when = n <= 0 ? `Now, until ${fmtDay(occ.end)}` : `${fmtRange(occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
-    return `<button class="ev-row" data-act="ev-edit" data-ev="${ev.id}"><span>${esc(ev.title)}</span><span class="ev-when">${when}</span></button>`;
-  }).join('')}</div>` : '';
-  h += `</div>`;
-
-  // 28-day grid ending today
-  h += `<div class="grid-wrap"><h2>Last 4 weeks</h2><div class="grid">`;
-  for (let i = 27; i >= 0; i--) {
-    const c = addDays(t, -i), s = dayStats(c), f = s.done / s.total;
-    const bg = s.off ? 'var(--event)' : f === 0 ? '#DDE1DB' : `color-mix(in srgb, var(--green) ${Math.round(25 + f * 75)}%, #DDE1DB)`;
-    const lbl = s.off ? eventsOn(c).map(x => x.ev.title).join(', ') : `${s.done} of ${s.total}`;
-    h += `<button class="cell${c === t ? ' today' : ''}${c === k ? ' sel' : ''}" style="background:${bg}" data-act="goto" data-day="${c}" aria-label="${parse(c).toDateString()}: ${esc(lbl)}">${s.done}</button>`;
+// scheduled items (with a time) on or after a day, for the upcoming list
+function scheduledFrom(from, days) {
+  const out = [];
+  for (const [k, d] of Object.entries(S.days)) {
+    if (k < from || diffDays(from, k) > days) continue;
+    for (const it of d._items || []) if (it.time && !it.done) out.push({ k, it });
   }
-  h += `</div><div class="grid-key"><span>4 weeks ago</span><span><i class="key-sw"></i>Event day</span><span>Today</span></div></div>`;
-  $('#today').innerHTML = h;
+  return out.sort((a, b) => (a.k + a.it.time).localeCompare(b.k + b.it.time));
+}
+function eventsView() {
+  const t = todayKey(), m = calMonth || t.slice(0, 7);
+  const first = parse(m + '-01'), lead = (first.getDay() + 6) % 7; // weeks start Monday
+  const daysIn = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  let h = `<div class="grid-wrap cal"><div class="cal-dow">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<span>${d}</span>`).join('')}</div><div class="grid">`;
+  for (let i = 0; i < lead; i++) h += `<span></span>`;
+  for (let d = 1; d <= daysIn; d++) {
+    const c = `${m}-${pad(d)}`, s = dayStats(c), f = s.done / s.total, evs = eventsOn(c), sched = dayItems(c).some(i => i.time);
+    const past = c <= t;
+    const bg = s.off || evs.length ? 'var(--event-soft)' : past && f > 0 ? `color-mix(in srgb, var(--green) ${Math.round(20 + f * 70)}%, #E4E7E2)` : past ? '#E4E7E2' : 'var(--surface)';
+    const lbl = [evs.map(x => x.ev.title).join(', '), past ? `${s.done} of ${s.total} Daily 3` : '', sched ? 'has scheduled items' : ''].filter(Boolean).join(', ');
+    h += `<button class="cell day${c === t ? ' today' : ''}${evs.length ? ' ev' : ''}${f >= .67 && past && !evs.length ? ' light' : ''}" style="background:${bg}" data-act="cal-day" data-day="${c}" aria-label="${parse(c).toDateString()}${lbl ? ': ' + esc(lbl) : ''}">
+      <span class="cn">${d}</span>${sched ? '<i class="dot"></i>' : ''}</button>`;
+  }
+  h += `</div><div class="grid-key"><span><i class="key-sw g"></i>Daily 3 done</span><span><i class="key-sw"></i>Event</span><span><i class="dot"></i> Scheduled</span></div></div>`;
+
+  const up = S.events.map(ev => ({ ev, occ: nextOccurrence(ev, t) })).filter(x => x.occ && diffDays(t, x.occ.start) <= 120)
+    .map(x => ({ k: x.occ.start < t ? t : x.occ.start, html: (() => {
+      const n = diffDays(t, x.occ.start);
+      const when = n <= 0 ? `Now, until ${fmtDay(x.occ.end)}` : `${fmtRange(x.occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
+      return `<button class="ev-row" data-act="ev-edit" data-ev="${x.ev.id}"><span>${esc(x.ev.title)}<small>All day</small></span><span class="ev-when">${when}</span></button>`;
+    })() }))
+    .concat(scheduledFrom(t, 60).map(({ k, it }) => ({ k, html: `<button class="ev-row" data-act="cal-day" data-day="${k}"><span>${esc(it.text)}<small>${fmtTime(it.time)}</small></span><span class="ev-when">${k === t ? 'Today' : k === addDays(t, 1) ? 'Tomorrow' : fmtRange({ start: k, end: k })}</span></button>` })))
+    .sort((a, b) => a.k.localeCompare(b.k)).slice(0, 15);
+  h += `<div class="grid-wrap"><div class="goal-top"><h2>Coming up</h2><button class="soft-btn" data-act="ev-new">+ Event</button></div>`;
+  h += up.length ? `<div class="ev-list">${up.map(x => x.html).join('')}</div>` : `<p class="muted-p">All-day events and anything you schedule with a time show up here.</p>`;
+  return h + `</div>`;
+}
+function renderToday() {
+  const k = viewDay, t = todayKey(), ev = dailySeg === 'events';
+  const st = streak();
+  $('#daily-seg').innerHTML = [['day', 'Day'], ['events', 'Events']].map(([v, n]) => `<button data-act="daily-seg" data-v="${v}" aria-pressed="${dailySeg === v}">${n}</button>`).join('');
+  if (ev) {
+    const m = calMonth || t.slice(0, 7);
+    $('#day-title').textContent = parse(m + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    $('#day-date').textContent = m === t.slice(0, 7) ? '' : 'Tap a day to open it';
+  } else {
+    $('#day-title').textContent = dayLabel(k);
+    $('#day-date').textContent = parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  $('#streak').textContent = st ? `${st}-day streak` : '';
+  $('#today').innerHTML = ev ? eventsView() : dayView(k);
+}
+
+/* ---------- day planner actions ---------- */
+async function editDayItem(k, it) {
+  const r = await form({ title: it ? 'Edit' : 'Add to the day', ok: it ? 'Save' : 'Add', del: !!it, values: it ? { ...it, date: k } : { date: k },
+    body: it ? '' : 'Give it a time if it’s scheduled, like an appointment. It lands in the right spot in the flow.',
+    fields: [{ key: 'text', label: 'What' }, { key: 'time', label: 'Time', type: 'time', half: 1 }, { key: 'date', label: 'Day', type: 'date', half: 1 }] });
+  if (!r) return;
+  const d = S.days[k] ??= {};
+  if (r === 'delete') { d._items = dayItems(k).filter(x => x !== it); save(); return renderToday(); }
+  if (!r.text) return toast('Add what it is');
+  const to = r.date || k, timeChanged = !it || (it.time || '') !== r.time;
+  const item = it || { id: uid(), done: false };
+  Object.assign(item, { text: r.text, time: r.time || '' });
+  if (!item.time) delete item.time;
+  const key = 'i:' + item.id;
+  if (it && (to !== k || timeChanged)) { d._items = dayItems(k).filter(x => x !== it); if (d._order) d._order = d._order.filter(x => x !== key); }
+  if (!it || to !== k || timeChanged) {
+    const dd = S.days[to] ??= {};
+    (dd._items ??= []).push(item);
+    // place it by time in the order you already have
+    if (dd._order) { const keys = flowKeys(to).filter(x => x !== key); placeByTime(to, keys, key); dd._order = keys; }
+  }
+  save(); renderToday();
+  if (to !== k) toast(`Moved to ${dayLabel(to).toLowerCase() === 'today' ? 'today' : fmtRange({ start: to, end: to })}`);
+}
+async function dailyClick(act, b) {
+  const k = viewDay;
+  if (act === 'daily-seg') { dailySeg = b.dataset.v; flowReorder = false; renderToday(); return window.scrollTo(0, 0); }
+  if (act === 'cal-day') { viewDay = b.dataset.day; dailySeg = 'day'; renderToday(); return window.scrollTo(0, 0); }
+  if (act === 'fl-add') return editDayItem(k, null);
+  if (act === 'fl-edit') return editDayItem(k, dayItems(k).find(x => x.id === b.dataset.id));
+  if (act === 'fl-check') { const it = dayItems(k).find(x => x.id === b.dataset.id); if (it) { it.done = !it.done; save(); renderToday(); } return; }
+  if (act === 'fl-reorder') { flowReorder = !flowReorder; return renderToday(); }
+  if (act === 'fl-move') {
+    const keys = flowKeys(k), i = keys.indexOf(b.dataset.key), j = i + +b.dataset.d;
+    if (i < 0 || !keys[j]) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+    saveOrder(k, keys); save(); renderToday();
+    return $(`#today [data-act="fl-move"][data-key="${b.dataset.key}"][data-d="${b.dataset.d}"]`)?.focus();
+  }
+  if (act === 'fo-add') {
+    const text = await ask({ title: 'Something to focus on', input: '', placeholder: 'e.g. FE study, Fitness, Raptor build', ok: 'Add' });
+    if (text) { S.focus.push({ id: uid(), text }); save(); renderToday(); }
+    return;
+  }
+  if (act === 'fo-open') {
+    const f = S.focus.find(x => x.id === b.dataset.id); if (!f) return;
+    const v = await menu(f.text, [{ value: 'add', label: `Add to ${k === todayKey() ? 'today' : 'this day'}` }, { value: 'rename', label: 'Rename' },
+      ...(S.focus.length > 1 ? [{ value: 'up', label: 'Move to the front' }] : []), { value: 'del', label: 'Remove from focus', danger: true }]);
+    if (v === 'add') { ((S.days[k] ??= {})._items ??= []).push({ id: uid(), text: f.text, done: false, focus: f.id }); toast('Added to the flow'); }
+    else if (v === 'rename') { const t = await ask({ title: 'Rename', input: f.text, ok: 'Save' }); if (t) f.text = t; }
+    else if (v === 'up') S.focus = [f, ...S.focus.filter(x => x !== f)];
+    else if (v === 'del') S.focus = S.focus.filter(x => x !== f);
+    else return;
+    save(); renderToday();
+  }
 }
 
 /* ---------- picker ---------- */
@@ -1413,6 +1599,14 @@ function renderAll() {
   VIEWS[S.tab].render();
 }
 
+$('#today').addEventListener('change', e => {
+  if (!e.target.matches('[data-day-goal]')) return;
+  const v = e.target.value.trim(), d = S.days[viewDay] ??= {};
+  if (v) d._goal = v; else delete d._goal;
+  save();
+});
+$('#today').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-day-goal]')) { e.preventDefault(); e.target.blur(); } });
+
 /* ---------- quick add ---------- */
 $('#quick').addEventListener('submit', e => {
   e.preventDefault();
@@ -1505,8 +1699,13 @@ document.addEventListener('click', async e => {
   switch (b.dataset.act) {
     /* daily */
     case 'quote-next': quoteShift++; renderToday(); break;
-    case 'day-prev': viewDay = addDays(viewDay, -1); renderToday(); break;
-    case 'day-next': viewDay = addDays(viewDay, 1); renderToday(); break;
+    case 'day-prev': case 'day-next': {
+      const d = b.dataset.act === 'day-next' ? 1 : -1;
+      // in the Events view the arrows page through months
+      if (dailySeg === 'events') { const f = parse((calMonth || todayKey().slice(0, 7)) + '-01'); f.setMonth(f.getMonth() + d); calMonth = dkey(f).slice(0, 7); }
+      else { viewDay = addDays(viewDay, d); flowReorder = false; }
+      renderToday(); break;
+    }
     case 'goto': if (viewDay === addDays(todayKey(), -1) && b.dataset.day === todayKey()) { (S.days[viewDay] ??= {})._reviewed = true; save(); }
       viewDay = b.dataset.day; renderToday(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
     case 'pick': openPicker(viewDay, b.dataset.slot); break;
@@ -2756,6 +2955,7 @@ document.addEventListener('click', ev => {
   const act = b.dataset.act, pre = act.slice(0, 2);
   if (pre === 'c-') carClick(act, b);
   else if (pre === 'k-') bookClick(act, b);
+  else if (/^(fl-|fo-|cal-day$|daily-seg$)/.test(act)) dailyClick(act, b);
   else if (pre === 'b-') buildClick(act, b);
   else if (pre === 'v-') voiceClick(act);
   else if (act === 'm-cloud') cloud?.open();
