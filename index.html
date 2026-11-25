@@ -264,6 +264,11 @@ textarea.doc-body{min-height:220px}
 .chev{flex:none;color:var(--muted);font-size:1.3rem}
 .lrow{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;padding:10px 2px}
 .lrows{margin-top:8px}
+.book-row{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line)}
+.book-row:first-child{border-top:0}
+.book-row .lrow{flex:1;min-width:0;border-top:0}
+.book-list{padding-top:4px;padding-bottom:4px}
+.book-row .mic{flex:none;width:40px;height:40px;border:0;border-radius:10px;display:grid;place-items:center;background:var(--green-soft);color:var(--green-ink)}
 .lrows .lrow:first-child{border-top:0}
 .lr-main{flex:1;min-width:0;overflow-wrap:anywhere}
 .lr-main b{display:block;font-weight:600}
@@ -297,10 +302,81 @@ textarea.doc-body{min-height:220px}
 @keyframes pulse{50%{opacity:.3}}
 .voice-title{margin-top:10px!important;font-size:.9rem}
 .voice-title b{color:var(--ink)}
+.voice-page{margin-top:10px}
+.voice-page .field{width:8em}
+.book-notes{list-style:none;margin:0;padding:0 2px 10px}
+.book-notes li{display:flex;gap:10px;align-items:flex-start;border-top:1px solid var(--line);padding:8px 0}
+.book-notes .bn-t{flex:1;min-width:0;white-space:pre-wrap;font-size:.93rem;line-height:1.45}
+.book-notes small{display:block;color:var(--muted);font-size:.76rem;margin-bottom:2px}
+.book-acts{display:flex;gap:8px;flex-wrap:wrap;padding:4px 2px 12px}
 
 .toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);opacity:0;
   background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:.92rem;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+/* collapsible sections */
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:'';flex:none;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s;margin:0 2px}
+.fold[open]>summary::before{transform:rotate(45deg)}
+.fold>summary .grow{flex:1;min-width:0}
+summary.day-h{padding:4px 0}
+.pick-body summary h3{margin:0}
+.pick-body .fold>summary{margin:16px 0 6px;color:var(--muted)}
+.big-fold{margin-top:16px}
+.big-fold>summary{font-size:1.08rem;font-weight:700;padding:6px 4px}
+.big-fold>summary small{font-weight:500;color:var(--muted);font-size:.85rem}
+.proj-fold{margin-top:10px}
+.proj-fold>summary{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;font-weight:650}
+.proj-fold[open]>summary{border-radius:14px 14px 0 0;border-bottom:0}
+.proj-fold>.list{border-radius:0 0 14px 14px}
+.proj-fold>.fold-body{border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;background:var(--surface);padding:4px 14px 12px}
+.proj-fold .n{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.proj-fold .fold-body .list{border-radius:12px}
+.proj-fold .section-toggle{margin:10px 0 6px}
+/* quote of the day */
+.quote{display:block;width:100%;text-align:left;margin:8px 0 12px;border:0;border-left:3px solid var(--green);background:none;padding:4px 4px 4px 12px;color:var(--ink)}
+.quote q{display:block;font-style:italic;line-height:1.45;quotes:'“' '”'}
+.quote small{display:block;margin-top:4px;color:var(--muted);font-size:.8rem}
+/* priority */
+.pri-hi{color:var(--danger);font-weight:650}
+.pri-lo{color:var(--muted)}
+.item.low .t{color:var(--muted)}
+/* day planner */
+#daily-seg{margin-top:8px}
+.goal-day{display:block;margin-top:12px}
+.goal-day span{display:block;font-size:.84rem;font-weight:650;color:var(--green-ink);margin:0 4px 4px}
+.goal-day .field{font-size:1.05rem;font-weight:600;background:#fff}
+.flow-head{display:flex;align-items:center;justify-content:space-between;margin:20px 4px 8px}
+.flow-head h2{margin:0;font-size:1rem}
+.flow-head .soft-btn[aria-pressed="true"]{background:var(--green);color:#fff}
+.flow{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;position:relative}
+.flow::before{content:'';position:absolute;left:25px;top:6px;bottom:6px;width:2px;background:var(--line);border-radius:1px}
+.flow-li{display:flex;align-items:center;gap:8px;position:relative}
+.flow-li>.slot,.flow-li>.fitem{flex:1;min-width:0}
+.rail{flex:none;width:52px;text-align:center;position:relative;z-index:1}
+.rail b{display:inline-block;background:var(--bg);color:var(--ink);font-size:.74rem;font-weight:700;padding:3px 0;line-height:1.2;font-variant-numeric:tabular-nums}
+.rail:empty::after{content:'';display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--bg);border:2px solid #A9B3A5}
+.flow-li:has(.is-done) .rail:empty::after,.flow-li:has(.fitem.done) .rail:empty::after{background:var(--green);border-color:var(--green)}
+.d3{color:var(--green-ink);font-weight:700}
+.fitem{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 12px}
+.fitem-t{flex:1;min-width:0;border:0;background:none;text-align:left;padding:6px 0;font-size:.98rem;overflow-wrap:anywhere}
+.fitem-t small{display:inline-block;margin-left:8px;color:var(--green-ink);font-size:.72rem;font-weight:650}
+.fitem.done .fitem-t{color:var(--muted);text-decoration:line-through}
+.fl-move{display:flex;flex-direction:column;flex:none;order:3}
+.fl-move .x{width:34px;height:28px}
+.now-line{display:flex;align-items:center;gap:8px;color:var(--danger);font-size:.75rem;font-weight:700;position:relative;z-index:1}
+.now-line::after{content:'';flex:1;height:2px;background:var(--danger);opacity:.6;border-radius:1px}
+.now-line span{background:var(--bg);padding-right:2px}
+.flow-add{display:flex;gap:8px}
+.flow-add .add-slot{flex:1}
+.focus .opts{margin-top:4px}
+.muted-p.small{font-size:.78rem;margin-top:8px}
+.cal-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;text-align:center;font-size:.72rem;color:var(--muted);font-weight:650}
+.cell.day{color:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:.85rem;font-weight:600;border:1px solid transparent}
+.cell.day.ev{border-color:var(--event-line)}
+.cell .dot,.grid-key .dot{flex:none;display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink)}
+.key-sw.g{background:var(--green)}
+.ev-row small{display:block;color:var(--muted);font-size:.76rem}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -316,6 +392,7 @@ textarea.doc-body{min-height:220px}
       <button class="icon-btn" data-act="today-menu" aria-label="Options">⋯</button>
     </div>
     <div class="sub-head"><span id="day-date"></span><span class="streak" id="streak"></span></div>
+    <div class="seg" id="daily-seg" role="group" aria-label="View"></div>
   </div></header>
   <main><div class="wrap" id="today"></div></main>
 </section>
@@ -324,10 +401,9 @@ textarea.doc-body{min-height:220px}
 <section id="v-notes" hidden>
   <header><div class="wrap">
     <div class="top">
-      <h1 id="title">Inbox</h1>
+      <h1 id="title">Notes</h1>
       <button class="icon-btn" data-act="menu" aria-label="Project options">⋯</button>
     </div>
-    <nav class="chips" id="chips" aria-label="Projects"></nav>
   </div></header>
   <main><div class="wrap" id="main"></div></main>
 </section>
@@ -357,9 +433,14 @@ textarea.doc-body{min-height:220px}
 <section id="v-build" hidden>
   <header><div class="wrap">
     <div class="top"><button class="icon-btn" id="build-back" data-act="b-back" aria-label="Back to the list" hidden>‹</button><h1 id="build-title">Projects</h1></div>
-    <div class="seg" id="build-seg"></div>
   </div></header>
   <main><div class="wrap" id="build"></div></main>
+</section>
+
+<!-- Books -->
+<section id="v-books" hidden>
+  <header><div class="wrap"><div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Books</h1></div></div></header>
+  <main><div class="wrap" id="books"></div></main>
 </section>
 
 <!-- More -->
@@ -430,13 +511,15 @@ textarea.doc-body{min-height:220px}
 </dialog>
 
 <dialog id="voice">
-  <h2>Voice note</h2>
+  <h2 id="voice-head">Voice note</h2>
   <p class="voice-status"><i class="pulse" id="voice-pulse"></i><span id="voice-status"></span></p>
   <button class="pill" id="voice-download" hidden>Download offline dictation</button>
   <textarea class="field" id="voice-text" aria-label="What you said" placeholder="Your words show up here. You can fix them before saving."></textarea>
   <p class="voice-title" id="voice-title-row">Title: <b id="voice-title"></b></p>
+  <label class="lbl voice-page" id="voice-page-row" hidden>Page<input class="field" id="voice-page" type="number" inputmode="numeric" min="0" placeholder="Optional"></label>
   <div class="btns">
     <button class="btn" data-act="v-save">Save note</button>
+    <button class="btn ghost" data-act="v-next" id="voice-next" hidden>Save, next note</button>
     <button class="btn ghost" data-act="v-mic" id="voice-mic">Keep talking</button>
     <button class="btn ghost cancel" data-act="v-cancel">Cancel</button>
   </div>
@@ -635,11 +718,11 @@ const fresh = () => ({
   days: {}, repeats: [], menus: JSON.parse(JSON.stringify(DEFAULT_MENUS)), tab: 'today',
   custom: [], workouts: [], docs: [], docCat: 'all', events: [],
   car: { vehicles: [], cur: null }, pm: [], biz: [], buildSeg: 'pm',
-  goals: [feGoal()]
+  goals: [feGoal()], books: [], fold: {}, focus: []
 });
 let localVersion = { revision: null, owner: null, base: null, synced: null, attempt: null };
 let cloud = null;
-const deviceFields = ['current', 'showDone', 'tab', 'docCat', 'buildSeg'];
+const deviceFields = ['current', 'showDone', 'tab', 'docCat', 'buildSeg', 'fold'];
 function cloudData(state) {
   const data = { ...state, car: { ...state.car } };
   for (const key of deviceFields) delete data[key];
@@ -698,6 +781,9 @@ function save() {
   return true;
 }
 
+// note priority: pri 1 is high, -1 is low; high goes to the top of a list and low to the bottom
+const byPri = items => [...items].sort((a, b) => (b.pri || 0) - (a.pri || 0));
+const prioritiesProject = () => S.projects.find(p => /^priorit/i.test(p.name.trim()));
 function proj(id = S.current) { return S.projects.find(p => p.id === id) || S.projects[0]; }
 function findItem(id) {
   for (const p of S.projects) { const it = p.items.find(i => i.id === id); if (it) return { p, it }; }
@@ -707,6 +793,28 @@ function findItem(id) {
   }
   return {};
 }
+
+/* ---------- collapsible sections ---------- */
+// S.fold remembers which sections you collapsed (true) or opened (false); def is the state before you touch it
+const folded = (key, def = false) => S.fold[key] ?? def;
+function fold(key, head, body, { cls = '', def = false, sumCls = '' } = {}) {
+  return `<details class="fold ${cls}" data-fold="${esc(key)}" data-def="${def ? 1 : 0}"${folded(key, def) ? '' : ' open'}>`
+    + `<summary class="${sumCls}">${head}</summary>${body}</details>`;
+}
+// toggle doesn't bubble, so listen in the capture phase
+document.addEventListener('toggle', e => {
+  const d = e.target;
+  if (!d.matches?.('details[data-fold]')) return;
+  const key = d.dataset.fold, collapsed = !d.open;
+  if (folded(key, d.dataset.def === '1') === collapsed) return; // rendered this way, not a tap
+  S.fold[key] = collapsed;
+  // opening a notes project makes it the one quick add files into
+  if (key.startsWith('n:') && !collapsed && S.current !== key.slice(2)) {
+    S.fold['n:' + S.current] ??= false; // the previous project stays as it was on screen
+    S.current = key.slice(2); save(); return renderNotes();
+  }
+  save();
+}, true);
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -809,6 +917,46 @@ function linkedDays(noteId) {
   return out.sort();
 }
 
+/* ---------- quote of the day ---------- */
+const QUOTES = [
+  ['Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.', 'Colossians 3:23'],
+  ['Commit to the Lord whatever you do, and he will establish your plans.', 'Proverbs 16:3'],
+  ['The heart of man plans his way, but the Lord establishes his steps.', 'Proverbs 16:9'],
+  ['This is the day that the Lord has made; let us rejoice and be glad in it.', 'Psalm 118:24'],
+  ['Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.', 'Joshua 1:9'],
+  ['Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', 'Galatians 6:9'],
+  ['Trust in the Lord with all your heart and lean not on your own understanding.', 'Proverbs 3:5'],
+  ['Go to the ant, you sluggard; consider its ways and be wise!', 'Proverbs 6:6'],
+  ['I can do all this through him who gives me strength.', 'Philippians 4:13'],
+  ['Be still, and know that I am God.', 'Psalm 46:10'],
+  ['Pray as though everything depended on God. Work as though everything depended on you.', 'Attributed to St. Augustine'],
+  ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', 'Will Durant'],
+  ['The impediment to action advances action. What stands in the way becomes the way.', 'Marcus Aurelius'],
+  ['Waste no more time arguing about what a good man should be. Be one.', 'Marcus Aurelius'],
+  ['It is not that we have a short time to live, but that we waste a lot of it.', 'Seneca'],
+  ['First say to yourself what you would be; and then do what you have to do.', 'Epictetus'],
+  ['Well done is better than well said.', 'Benjamin Franklin'],
+  ['Lost time is never found again.', 'Benjamin Franklin'],
+  ['Do what you can, with what you have, where you are.', 'Theodore Roosevelt'],
+  ['A journey of a thousand miles begins with a single step.', 'Lao Tzu'],
+  ['Small deeds done are better than great deeds planned.', 'Peter Marshall'],
+  ['How we spend our days is, of course, how we spend our lives.', 'Annie Dillard'],
+  ['The best time to plant a tree was twenty years ago. The second best time is now.', 'Proverb'],
+  ['Plans are worthless, but planning is everything.', 'Dwight D. Eisenhower'],
+  ['You miss 100% of the shots you don’t take.', 'Wayne Gretzky'],
+  ['If you want to go fast, go alone. If you want to go far, go together.', 'Proverb'],
+  ['Measure twice, cut once.', 'Carpenter’s proverb'],
+  ['Simplicity is prerequisite for reliability.', 'Edsger W. Dijkstra'],
+  ['Scientists study the world as it is; engineers create the world that has never been.', 'Theodore von Kármán'],
+  ['The best way out is always through.', 'Robert Frost']
+];
+let quoteShift = 0;
+// one quote per day, the same all day; tapping it shows the next one
+function quoteHTML(k) {
+  const n = QUOTES.length, i = (((diffDays('2026-01-01', k) + quoteShift) % n) + n) % n, [q, who] = QUOTES[i];
+  return `<button class="quote" data-act="quote-next" aria-label="Quote of the day. Tap for another."><q>${esc(q)}</q><small>${esc(who)}</small></button>`;
+}
+
 /* ---------- render: today ---------- */
 function dayLabel(k) {
   const t = todayKey(), d = diffDays(t, k);
@@ -817,21 +965,72 @@ function dayLabel(k) {
   if (d === -1) return 'Yesterday';
   return parse(k).toLocaleDateString(undefined, { weekday: 'long' });
 }
-function renderToday() {
-  const k = viewDay;
-  $('#day-title').textContent = dayLabel(k);
-  $('#day-date').textContent = parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  const st = streak();
-  $('#streak').textContent = st ? `${st}-day streak` : '';
+/* ---------- day planner ---------- */
+// A day's flow is one ordered list: the Daily 3 slots (they drive the streak) plus extra items you add.
+// Items can have a time (scheduled things); a timed item is placed among the others by time, and you can reorder by hand.
+// Day data: S.days[k]._goal (today's goal), _items [{ id, text, time, done }], _order [keys]. Slot keys are 'am', 'pmBig', …; item keys are 'i:<id>'.
+let dailySeg = 'day', calMonth = null, flowReorder = false;
+// rough time of day for each slot, so timed items fall in a sensible place around them
+const SLOT_TIME = { am: '06:00', wkBig: '12:00', pmBig: '18:00', pmSmall: '20:00' };
+const dayItems = k => S.days[k]?._items || [];
+function keyTime(k, key) {
+  if (key.startsWith('i:')) return dayItems(k).find(i => 'i:' + i.id === key)?.time || '';
+  return SLOT_TIME[key] || '';
+}
+function placeByTime(k, keys, key) {
+  const t = keyTime(k, key);
+  if (!t) return keys.push(key);
+  let j = keys.findIndex(x => keyTime(k, x) > t);
+  if (j < 0) { const last = keys.map(x => keyTime(k, x)).findLastIndex(x => x && x <= t); j = last < 0 ? keys.length : last + 1; }
+  keys.splice(j, 0, key);
+}
+function flowKeys(k) {
+  const all = [...slotsFor(k).map(s => s.key), ...dayItems(k).map(i => 'i:' + i.id)];
+  const keys = (S.days[k]?._order || []).filter(x => all.includes(x));
+  for (const x of all) if (!keys.includes(x)) placeByTime(k, keys, x);
+  return keys;
+}
+// writing the order down freezes it, so later additions slot in around what you arranged
+const saveOrder = (k, keys) => { (S.days[k] ??= {})._order = keys; };
+function fmtTime(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':').map(Number);
+  return new Date(2000, 0, 1, h, m).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+const nowTime = () => { const d = new Date(); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
-  let h = '';
+function slotRow(k, s, rail) {
+  const e = getSlot(k, s.key);
+  const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
+  let note = '';
+  if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : p.virtual ? `Worktime on ${it.text}` : `From ${p.name}`; }
+  else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
+  return `<li class="flow-li" data-key="${s.key}">${rail}<section class="slot${e.task && e.done ? ' is-done' : ''}">
+      <div class="slot-main">
+        <span class="slot-when"><b class="d3">Daily 3</b> · ${s.when}</span>
+        <button class="slot-task${e.task ? '' : ' empty-task'}" data-act="pick" data-slot="${s.key}">${e.task ? esc(e.task) : 'Pick a task'}</button>
+        ${note ? `<span class="slot-note">${esc(note)}</span>` : ''}
+      </div>
+      <button class="breaker" role="switch" aria-checked="${!!(e.task && e.done)}" data-act="flip" data-slot="${s.key}" aria-label="${s.when} task complete"${e.task ? '' : ' disabled'}>
+        <span class="bk-lbl bk-on">Complete</span><span class="bk-slot"><span class="bk-handle"></span></span><span class="bk-lbl bk-off">Not</span>
+      </button>
+    </section></li>`;
+}
+function itemRow(it, rail) {
+  return `<li class="flow-li" data-key="i:${it.id}">${rail}<div class="fitem${it.done ? ' done' : ''}">
+      <button class="check" data-act="fl-check" data-id="${it.id}" aria-label="${it.done ? 'Mark not done' : 'Mark done'}"></button>
+      <button class="fitem-t" data-act="fl-edit" data-id="${it.id}">${esc(it.text)}${it.focus ? '<small>Focus</small>' : ''}</button>
+    </div></li>`;
+}
+function dayView(k) {
+  let h = quoteHTML(k);
   const t0 = todayKey(), y = addDays(t0, -1);
   if (k === t0) {
     const ys = dayStats(y), planned = slotsFor(y).some(s => getSlot(y, s.key).task);
     if (planned && ys.done < ys.total && !S.days[y]?._reviewed)
       h += `<div class="catchup"><span>Yesterday: ${ys.done} of ${ys.total} marked</span><button data-act="goto" data-day="${y}">Mark yesterday</button></div>`;
-  } else if (k < t0) {
-    h += `<div class="catchup"><span>You're looking at ${dayLabel(k).toLowerCase() === 'yesterday' ? 'yesterday' : parse(k).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span><button data-act="goto" data-day="${t0}">Back to today</button></div>`;
+  } else {
+    h += `<div class="catchup"><span>You're ${k < t0 ? 'looking back at' : 'planning'} ${['yesterday', 'tomorrow'].includes(dayLabel(k).toLowerCase()) ? dayLabel(k).toLowerCase() : parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span><button data-act="goto" data-day="${t0}">Back to today</button></div>`;
   }
   const evs = eventsOn(k), ds = dayStats(k);
   for (const { ev, occ } of evs) {
@@ -839,34 +1038,44 @@ function renderToday() {
     const info = [len > 1 ? `Day ${diffDays(occ.start, k) + 1} of ${len}` : 'All day', ev.pause ? 'Tasks paused' : ''].filter(Boolean).join(' · ');
     h += `<button class="event-banner" data-act="ev-edit" data-ev="${ev.id}"><b>${esc(ev.title)}</b><span>${info}</span></button>`;
   }
+
+  // the goal of the day
+  h += `<label class="goal-day"><span>${k === t0 ? 'Today’s goal' : 'Goal for the day'}</span>
+    <input class="field" data-day-goal value="${esc(S.days[k]?._goal || '')}" placeholder="What would make ${k === t0 ? 'today' : 'this day'} a win?" enterkeyhint="done"></label>`;
+
+  // the flow of the day
   const hideSlots = ds.off && !S.days[k]?._show;
-  if (hideSlots) h += `<button class="add-slot" data-act="ev-show">Plan tasks anyway</button>`;
-  h += `<div class="slots"${hideSlots ? ' hidden' : ''}>`;
-  for (const s of slotsFor(k)) {
-    const e = getSlot(k, s.key);
-    const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
-    let note = '';
-    if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : `From ${p.name}`; }
-    else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
-    h += `<section class="slot${e.task && e.done ? ' is-done' : ''}">
-      <div class="slot-main">
-        <span class="slot-when">${s.when}</span>
-        <button class="slot-task${e.task ? '' : ' empty-task'}" data-act="pick" data-slot="${s.key}">${e.task ? esc(e.task) : 'Pick a task'}</button>
-        ${note ? `<span class="slot-note">${esc(note)}</span>` : ''}
-      </div>
-      <button class="breaker" role="switch" aria-checked="${!!(e.task && e.done)}" data-act="flip" data-slot="${s.key}" aria-label="${s.when} task complete"${e.task ? '' : ' disabled'}>
-        <span class="bk-lbl bk-on">Complete</span><span class="bk-slot"><span class="bk-handle"></span></span><span class="bk-lbl bk-off">Not</span>
-      </button>
-    </section>`;
-  }
+  const slots = slotsFor(k), keys = flowKeys(k), items = dayItems(k);
+  const itemDone = items.filter(i => i.done).length;
+  h += `<div class="flow-head"><h2>Flow of the day</h2>${keys.length > 1 ? `<button class="soft-btn" data-act="fl-reorder" aria-pressed="${flowReorder}">${flowReorder ? 'Done' : 'Reorder'}</button>` : ''}</div>`;
+  if (hideSlots) h += `<button class="add-slot" data-act="ev-show">Plan Daily 3 tasks anyway</button>`;
+  h += `<ol class="flow${flowReorder ? ' reordering' : ''}">`;
+  const now = k === t0 ? nowTime() : null;
+  let nowShown = !now || !keys.some(x => x.startsWith('i:') && keyTime(k, x));
+  keys.forEach((key, i) => {
+    const s = slots.find(x => x.key === key), it = !s && items.find(x => 'i:' + x.id === key);
+    if (s && hideSlots) return;
+    const time = it ? it.time : '';
+    // a line for "now" in today's flow, just before the first scheduled item still ahead
+    if (!nowShown && time && time > now) { h += `<li class="now-line"><span>Now · ${fmtTime(now)}</span></li>`; nowShown = true; }
+    const arrows = flowReorder ? `<span class="fl-move"><button class="x" data-act="fl-move" data-key="${key}" data-d="-1" aria-label="Move up"${i ? '' : ' disabled'}>↑</button><button class="x" data-act="fl-move" data-key="${key}" data-d="1" aria-label="Move down"${i < keys.length - 1 ? '' : ' disabled'}>↓</button></span>` : '';
+    const rail = `<span class="rail">${time ? `<b>${fmtTime(time)}</b>` : ''}</span>${arrows}`;
+    h += s ? slotRow(k, s, rail) : itemRow(it, rail);
+  });
+  if (!nowShown) h += `<li class="now-line"><span>Now · ${fmtTime(now)}</span></li>`;
+  h += `</ol>`;
+  h += `<div class="flow-add"><button class="add-slot" data-act="fl-add">+ Add to the day</button>${hideSlots ? '' : `<button class="add-slot" data-act="slot-add">+ Daily 3 slot</button>`}</div>`;
+  h += `<p class="progress-line">${ds.off ? 'Day off. Your streak is safe.' : ds.done === ds.total ? 'Daily 3 all done. Nice work.' : `Daily 3: ${ds.done} of ${ds.total} done`}${items.length ? ` · Other: ${itemDone} of ${items.length}` : ''}</p>`;
+
+  // ongoing focus: carries over every day until you change it
+  h += `<div class="grid-wrap focus"><div class="goal-top"><h2>Focus</h2><button class="soft-btn" data-act="fo-add">+ Focus</button></div>`;
+  h += S.focus.length ? `<div class="opts">${S.focus.map(f => `<button class="opt" data-act="fo-open" data-id="${f.id}">${esc(f.text)}</button>`).join('')}</div><p class="muted-p small">Tap one to add it to the day.</p>`
+    : `<p class="muted-p">The bigger things you’re working on right now, like a study plan, fitness or a build. They stay here every day.</p>`;
   h += `</div>`;
-  if (!hideSlots) h += `<button class="add-slot" data-act="slot-add">+ Add a task</button>`;
-  h += `<p class="progress-line">${ds.off ? 'Day off. Your streak is safe.' : ds.done === ds.total ? 'All done. Nice work.' : `${ds.done} of ${ds.total} done`}</p>`;
 
   const due = carAlerts();
   if (due.length) h += `<button class="goal-strip" data-tab="car"><span class="gs-top"><b>${esc(due[0].v.name)}</b><span>${due.length} due</span></span>
     <span class="gs-sub ${due[0].d.state === 'over' ? 'due-over' : 'due-soon'}">${esc(due[0].it.name)} · ${esc(dueText(due[0].d).toLowerCase())}</span></button>`;
-
   for (const g of S.goals) {
     const t = g.trackers.find(x => trackStats(x).pct !== null), st = t && trackStats(t);
     if (!g.date && !t) continue;
@@ -875,29 +1084,117 @@ function renderToday() {
     h += `<button class="goal-strip" data-tab="goals"><span class="gs-top"><b>${esc(g.name)}</b><span>${left}</span></span>
       ${t ? `<span class="gs-sub">${esc(t.name)} · ${esc(st.summary)}</span><span class="bar thin"><i style="width:${st.pct}%"></i></span>` : ''}</button>`;
   }
+  return h;
+}
 
-  // upcoming and ongoing events
-  const t = todayKey();
-  const up = S.events.map(ev => ({ ev, occ: nextOccurrence(ev, t) })).filter(x => x.occ && diffDays(t, x.occ.start) <= 120)
-    .sort((a, b) => a.occ.start.localeCompare(b.occ.start)).slice(0, 6);
-  h += `<div class="grid-wrap"><div class="goal-top"><h2>Events</h2><button class="soft-btn" data-act="ev-new">+ Event</button></div>`;
-  h += up.length ? `<div class="ev-list">${up.map(({ ev, occ }) => {
-    const n = diffDays(t, occ.start);
-    const when = n <= 0 ? `Now, until ${fmtDay(occ.end)}` : `${fmtRange(occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
-    return `<button class="ev-row" data-act="ev-edit" data-ev="${ev.id}"><span>${esc(ev.title)}</span><span class="ev-when">${when}</span></button>`;
-  }).join('')}</div>` : `<p class="muted-p">Hunting trips, holidays, anything that takes the whole day.</p>`;
-  h += `</div>`;
-
-  // 28-day grid ending today
-  h += `<div class="grid-wrap"><h2>Last 4 weeks</h2><div class="grid">`;
-  for (let i = 27; i >= 0; i--) {
-    const c = addDays(t, -i), s = dayStats(c), f = s.done / s.total;
-    const bg = s.off ? 'var(--event)' : f === 0 ? '#DDE1DB' : `color-mix(in srgb, var(--green) ${Math.round(25 + f * 75)}%, #DDE1DB)`;
-    const lbl = s.off ? eventsOn(c).map(x => x.ev.title).join(', ') : `${s.done} of ${s.total}`;
-    h += `<button class="cell${c === t ? ' today' : ''}${c === k ? ' sel' : ''}" style="background:${bg}" data-act="goto" data-day="${c}" aria-label="${parse(c).toDateString()}: ${esc(lbl)}">${s.done}</button>`;
+// scheduled items (with a time) on or after a day, for the upcoming list
+function scheduledFrom(from, days) {
+  const out = [];
+  for (const [k, d] of Object.entries(S.days)) {
+    if (k < from || diffDays(from, k) > days) continue;
+    for (const it of d._items || []) if (it.time && !it.done) out.push({ k, it });
   }
-  h += `</div><div class="grid-key"><span>4 weeks ago</span><span><i class="key-sw"></i>Event day</span><span>Today</span></div></div>`;
-  $('#today').innerHTML = h;
+  return out.sort((a, b) => (a.k + a.it.time).localeCompare(b.k + b.it.time));
+}
+function eventsView() {
+  const t = todayKey(), m = calMonth || t.slice(0, 7);
+  const first = parse(m + '-01'), lead = (first.getDay() + 6) % 7; // weeks start Monday
+  const daysIn = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  let h = `<div class="grid-wrap cal"><div class="cal-dow">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(d => `<span>${d}</span>`).join('')}</div><div class="grid">`;
+  for (let i = 0; i < lead; i++) h += `<span></span>`;
+  for (let d = 1; d <= daysIn; d++) {
+    const c = `${m}-${pad(d)}`, s = dayStats(c), f = s.done / s.total, evs = eventsOn(c), sched = dayItems(c).some(i => i.time);
+    const past = c <= t;
+    const bg = s.off || evs.length ? 'var(--event-soft)' : past && f > 0 ? `color-mix(in srgb, var(--green) ${Math.round(20 + f * 70)}%, #E4E7E2)` : past ? '#E4E7E2' : 'var(--surface)';
+    const lbl = [evs.map(x => x.ev.title).join(', '), past ? `${s.done} of ${s.total} Daily 3` : '', sched ? 'has scheduled items' : ''].filter(Boolean).join(', ');
+    h += `<button class="cell day${c === t ? ' today' : ''}${evs.length ? ' ev' : ''}${f >= .67 && past && !evs.length ? ' light' : ''}" style="background:${bg}" data-act="cal-day" data-day="${c}" aria-label="${parse(c).toDateString()}${lbl ? ': ' + esc(lbl) : ''}">
+      <span class="cn">${d}</span>${sched ? '<i class="dot"></i>' : ''}</button>`;
+  }
+  h += `</div><div class="grid-key"><span><i class="key-sw g"></i>Daily 3 done</span><span><i class="key-sw"></i>Event</span><span><i class="dot"></i> Scheduled</span></div></div>`;
+
+  const up = S.events.map(ev => ({ ev, occ: nextOccurrence(ev, t) })).filter(x => x.occ && diffDays(t, x.occ.start) <= 120)
+    .map(x => ({ k: x.occ.start < t ? t : x.occ.start, html: (() => {
+      const n = diffDays(t, x.occ.start);
+      const when = n <= 0 ? `Now, until ${fmtDay(x.occ.end)}` : `${fmtRange(x.occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
+      return `<button class="ev-row" data-act="ev-edit" data-ev="${x.ev.id}"><span>${esc(x.ev.title)}<small>All day</small></span><span class="ev-when">${when}</span></button>`;
+    })() }))
+    .concat(scheduledFrom(t, 60).map(({ k, it }) => ({ k, html: `<button class="ev-row" data-act="cal-day" data-day="${k}"><span>${esc(it.text)}<small>${fmtTime(it.time)}</small></span><span class="ev-when">${k === t ? 'Today' : k === addDays(t, 1) ? 'Tomorrow' : fmtRange({ start: k, end: k })}</span></button>` })))
+    .sort((a, b) => a.k.localeCompare(b.k)).slice(0, 15);
+  h += `<div class="grid-wrap"><div class="goal-top"><h2>Coming up</h2><button class="soft-btn" data-act="ev-new">+ Event</button></div>`;
+  h += up.length ? `<div class="ev-list">${up.map(x => x.html).join('')}</div>` : `<p class="muted-p">All-day events and anything you schedule with a time show up here.</p>`;
+  return h + `</div>`;
+}
+function renderToday() {
+  const k = viewDay, t = todayKey(), ev = dailySeg === 'events';
+  const st = streak();
+  $('#daily-seg').innerHTML = [['day', 'Day'], ['events', 'Events']].map(([v, n]) => `<button data-act="daily-seg" data-v="${v}" aria-pressed="${dailySeg === v}">${n}</button>`).join('');
+  if (ev) {
+    const m = calMonth || t.slice(0, 7);
+    $('#day-title').textContent = parse(m + '-01').toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    $('#day-date').textContent = m === t.slice(0, 7) ? '' : 'Tap a day to open it';
+  } else {
+    $('#day-title').textContent = dayLabel(k);
+    $('#day-date').textContent = parse(k).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  $('#streak').textContent = st ? `${st}-day streak` : '';
+  $('#today').innerHTML = ev ? eventsView() : dayView(k);
+}
+
+/* ---------- day planner actions ---------- */
+async function editDayItem(k, it) {
+  const r = await form({ title: it ? 'Edit' : 'Add to the day', ok: it ? 'Save' : 'Add', del: !!it, values: it ? { ...it, date: k } : { date: k },
+    body: it ? '' : 'Give it a time if it’s scheduled, like an appointment. It lands in the right spot in the flow.',
+    fields: [{ key: 'text', label: 'What' }, { key: 'time', label: 'Time', type: 'time', half: 1 }, { key: 'date', label: 'Day', type: 'date', half: 1 }] });
+  if (!r) return;
+  const d = S.days[k] ??= {};
+  if (r === 'delete') { d._items = dayItems(k).filter(x => x !== it); save(); return renderToday(); }
+  if (!r.text) return toast('Add what it is');
+  const to = r.date || k, timeChanged = !it || (it.time || '') !== r.time;
+  const item = it || { id: uid(), done: false };
+  Object.assign(item, { text: r.text, time: r.time || '' });
+  if (!item.time) delete item.time;
+  const key = 'i:' + item.id;
+  if (it && (to !== k || timeChanged)) { d._items = dayItems(k).filter(x => x !== it); if (d._order) d._order = d._order.filter(x => x !== key); }
+  if (!it || to !== k || timeChanged) {
+    const dd = S.days[to] ??= {};
+    (dd._items ??= []).push(item);
+    // place it by time in the order you already have
+    if (dd._order) { const keys = flowKeys(to).filter(x => x !== key); placeByTime(to, keys, key); dd._order = keys; }
+  }
+  save(); renderToday();
+  if (to !== k) toast(`Moved to ${dayLabel(to).toLowerCase() === 'today' ? 'today' : fmtRange({ start: to, end: to })}`);
+}
+async function dailyClick(act, b) {
+  const k = viewDay;
+  if (act === 'daily-seg') { dailySeg = b.dataset.v; flowReorder = false; renderToday(); return window.scrollTo(0, 0); }
+  if (act === 'cal-day') { viewDay = b.dataset.day; dailySeg = 'day'; renderToday(); return window.scrollTo(0, 0); }
+  if (act === 'fl-add') return editDayItem(k, null);
+  if (act === 'fl-edit') return editDayItem(k, dayItems(k).find(x => x.id === b.dataset.id));
+  if (act === 'fl-check') { const it = dayItems(k).find(x => x.id === b.dataset.id); if (it) { it.done = !it.done; save(); renderToday(); } return; }
+  if (act === 'fl-reorder') { flowReorder = !flowReorder; return renderToday(); }
+  if (act === 'fl-move') {
+    const keys = flowKeys(k), i = keys.indexOf(b.dataset.key), j = i + +b.dataset.d;
+    if (i < 0 || !keys[j]) return;
+    [keys[i], keys[j]] = [keys[j], keys[i]];
+    saveOrder(k, keys); save(); renderToday();
+    return $(`#today [data-act="fl-move"][data-key="${b.dataset.key}"][data-d="${b.dataset.d}"]`)?.focus();
+  }
+  if (act === 'fo-add') {
+    const text = await ask({ title: 'Something to focus on', input: '', placeholder: 'e.g. FE study, Fitness, Raptor build', ok: 'Add' });
+    if (text) { S.focus.push({ id: uid(), text }); save(); renderToday(); }
+    return;
+  }
+  if (act === 'fo-open') {
+    const f = S.focus.find(x => x.id === b.dataset.id); if (!f) return;
+    const v = await menu(f.text, [{ value: 'add', label: `Add to ${k === todayKey() ? 'today' : 'this day'}` }, { value: 'rename', label: 'Rename' },
+      ...(S.focus.length > 1 ? [{ value: 'up', label: 'Move to the front' }] : []), { value: 'del', label: 'Remove from focus', danger: true }]);
+    if (v === 'add') { ((S.days[k] ??= {})._items ??= []).push({ id: uid(), text: f.text, done: false, focus: f.id }); toast('Added to the flow'); }
+    else if (v === 'rename') { const t = await ask({ title: 'Rename', input: f.text, ok: 'Save' }); if (t) f.text = t; }
+    else if (v === 'up') S.focus = [f, ...S.focus.filter(x => x !== f)];
+    else if (v === 'del') S.focus = S.focus.filter(x => x !== f);
+    else return;
+    save(); renderToday();
+  }
 }
 
 /* ---------- picker ---------- */
@@ -912,33 +1209,42 @@ function openPicker(k, slotKey) {
   $('#pick-rep').hidden = !!slot.extra;
 
   let h = '';
+  // every group in the picker can be collapsed; it remembers per group name
+  const group = (key, name, body) => fold('pk:' + key, `<h3>${name}</h3>`, `<div class="opts">${body}</div>`);
+  const noteOpts = (i, from) => {
+    let o = `<button class="opt${cur.noteId === i.id && !cur.subId ? ' cur' : ''}" data-act="pick-note" data-id="${i.id}">${esc(i.text)}${i.subs.length ? `<small>${i.subs.filter(x => !x.done).length} steps left${from ? ` · ${esc(from)}` : ''}</small>` : from ? `<small>${esc(from)}</small>` : ''}</button>`;
+    for (const sb of i.subs.filter(x => !x.done))
+      o += `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${i.id}" data-sub="${sb.id}">${esc(sb.text)}<small>Step of ${esc(i.text)}</small></button>`;
+    return o;
+  };
+  // Priorities first: everything in a notes project named Priorities, plus high-priority notes from any project
+  const priP = prioritiesProject(), pri = [];
+  for (const p of S.projects) for (const i of byPri(p.items.filter(i => !i.done)))
+    if (p === priP || i.pri > 0) pri.push(noteOpts(i, p === priP ? '' : p.name));
+  if (pri.length) h += group('priorities', 'Priorities', pri.join(''));
   if (S.custom.length) {
-    h += `<h3>Your tasks</h3><div class="opts">` + S.custom.map(t =>
-      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+    h += group('custom', 'Your tasks', S.custom.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join(''));
   }
-  for (const p of S.projects) {
-    const open = p.items.filter(i => !i.done);
-    if (!open.length) continue;
-    h += `<h3>${esc(p.name)} notes</h3><div class="opts">`;
-    for (const i of open.slice(0, 30)) {
-      h += `<button class="opt${cur.noteId === i.id && !cur.subId ? ' cur' : ''}" data-act="pick-note" data-id="${i.id}">${esc(i.text)}${i.subs.length ? `<small>${i.subs.filter(x => !x.done).length} steps left</small>` : ''}</button>`;
-      for (const sb of i.subs.filter(x => !x.done))
-        h += `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${i.id}" data-sub="${sb.id}">${esc(sb.text)}<small>Step of ${esc(i.text)}</small></button>`;
-    }
-    h += `</div>`;
-  }
+  // project worktime and the next steps of each active project or business
   for (const [kind, label] of [['pm', 'project'], ['biz', 'business']]) for (const x of S[kind]) {
     if (kind === 'pm' ? x.status !== 'active' : x.stage === 'paused') continue;
     const todo = x.subs.filter(s => !s.done).slice(0, 5);
-    if (!todo.length) continue;
-    h += `<h3>${esc(x.text)} (${label})</h3><div class="opts">` + todo.map(sb =>
-      `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${x.id}" data-sub="${sb.id}">${esc(sb.text)}</button>`).join('') + `</div>`;
+    const work = `Work on ${x.text} (1 hr)`;
+    h += group(kind + ':' + x.id, `${esc(x.text)} (${label})`,
+      `<button class="opt${cur.noteId === x.id && !cur.subId ? ' cur' : ''}" data-act="pick-work" data-id="${x.id}">${esc(work)}<small>Logs an update when you finish it</small></button>`
+      + todo.map(sb => `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${x.id}" data-sub="${sb.id}">${esc(sb.text)}</button>`).join(''));
+  }
+  for (const p of S.projects) {
+    if (p === priP) continue;
+    const open = byPri(p.items.filter(i => !i.done && !(i.pri > 0)));
+    if (open.length) h += group('n:' + p.id, `${esc(p.name)} notes`, open.slice(0, 30).map(i => noteOpts(i)).join(''));
   }
   if (h) h += `<h3 class="lists-h">Standard task lists</h3>`;
   for (const cat of menuCats(slot.menu)) {
     if (!cat.tasks.length) continue;
-    h += `<h3>${esc(cat.name)}</h3><div class="opts">` + cat.tasks.map(t =>
-      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+    h += group('cat:' + cat.name, esc(cat.name), cat.tasks.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join(''));
   }
   h += `<div class="pick-foot">`;
   if (cur.task) h += `<button class="btn ghost" data-act="pick-clear">Clear this day</button>`;
@@ -962,30 +1268,35 @@ function pickCustom(task) {
 }
 
 /* ---------- render: notes ---------- */
+const MIC = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>`;
 const CAL = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13.5v4M10 15.5h4"/></svg>`;
-function itemHTML(i) {
+function itemHTML(i, p) {
   const isOpen = open === i.id;
   const sd = i.subs.filter(s => s.done).length;
   let meta = '';
+  if (i.pri > 0 && !i.done) meta += `<span class="pri-hi">High priority</span>`;
+  else if (i.pri < 0 && !i.done) meta += `<span class="pri-lo">Low priority</span>`;
   if (i.subs.length) meta += `<span class="prog"><i style="width:${Math.round(sd / i.subs.length * 100)}%"></i></span><span>${sd}/${i.subs.length}</span>`;
   if (i.note && i.note.trim()) meta += `<span>Has notes</span>`;
   const days = linkedDays(i.id).filter(d => d >= todayKey());
   if (days.length && !i.done) meta += `<span class="on-day">Planned ${dayLabel(days[0]).toLowerCase() === 'today' ? 'today' : 'for ' + dayLabel(days[0])}</span>`;
-  return `<li class="item${i.done ? ' done' : ''}${isOpen ? ' open' : ''}" data-id="${i.id}">
+  return `<li class="item${i.done ? ' done' : ''}${isOpen ? ' open' : ''}${i.pri < 0 ? ' low' : ''}" data-id="${i.id}">
     <div class="row">
       <button class="check" data-act="toggle" aria-label="${i.done ? 'Mark not done' : 'Mark done'}"></button>
       <button class="open-btn" data-act="expand" aria-expanded="${isOpen}">
         <span class="t">${esc(i.text)}</span>${meta ? `<span class="meta">${meta}</span>` : ''}
       </button>
       ${i.done ? '' : `<button class="x plan-x row-plan" data-act="plan-note" aria-label="Put in daily three" title="Put in daily three">${CAL}</button>`}
-    </div>${isOpen ? detailHTML(i) : ''}</li>`;
+    </div>${isOpen ? detailHTML(i, p) : ''}</li>`;
 }
-function detailHTML(i) {
-  const here = proj().id;
+function detailHTML(i, p = proj()) {
+  const here = p.id;
   const opts = S.projects.map(p => `<option value="${p.id}"${p.id === here ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
   return `<div class="detail">
     <input class="field title-in" data-edit="text" value="${esc(i.text)}" aria-label="Title">
     <textarea class="field" data-edit="note" placeholder="Notes" aria-label="Notes">${esc(i.note || '')}</textarea>
+    <div class="seg" role="group" aria-label="Priority">${[[1, 'High'], [0, 'Normal'], [-1, 'Low']].map(([v, n]) =>
+      `<button data-act="pri" data-v="${v}" aria-pressed="${(i.pri || 0) === v}" aria-label="${n} priority">${n}</button>`).join('')}</div>
     <ul class="subs">${i.subs.map(s => `
       <li class="sub${s.done ? ' done' : ''}" data-sub="${s.id}">
         <button class="check sm" data-act="sub-toggle" aria-label="${s.done ? 'Mark subtask not done' : 'Mark subtask done'}"></button>
@@ -1005,26 +1316,28 @@ function detailHTML(i) {
     </div>
   </div>`;
 }
+// every notes project is a collapsible section; the open one you touched last is where quick add files new notes
 function renderNotes() {
-  const p = proj(); S.current = p.id;
-  $('#title').textContent = p.name;
-  $('#q').placeholder = `Add to ${p.name}`;
-  $('#chips').innerHTML = S.projects.map(x => {
-    const n = x.items.filter(i => !i.done).length;
-    return `<button class="chip" data-proj="${x.id}" aria-pressed="${x.id === p.id}">${esc(x.name)}${n ? `<span class="n">${n}</span>` : ''}</button>`;
-  }).join('') + `<button class="chip add" data-act="new-project">+ Project</button>`;
-  const todo = p.items.filter(i => !i.done), done = p.items.filter(i => i.done);
+  const cur = proj(); S.current = cur.id;
+  $('#q').placeholder = `Add to ${cur.name}`;
   let h = '';
-  if (!p.items.length) h = `<p class="empty">Nothing in ${esc(p.name)} yet.<br>Type below and press Enter to add a note.</p>`;
-  else {
-    h += todo.length ? `<ul class="list">${todo.map(itemHTML).join('')}</ul>` : `<p class="empty small">Everything here is done.</p>`;
-    if (done.length) {
-      h += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
-      if (S.showDone) h += `<ul class="list">${done.map(itemHTML).join('')}</ul><button class="clear-done" data-act="clear-done">Clear done items</button>`;
+  for (const p of S.projects) {
+    const todo = byPri(p.items.filter(i => !i.done)), done = p.items.filter(i => i.done);
+    const isCur = p.id === cur.id;
+    let body = '';
+    if (!p.items.length) body = `<p class="muted-p">Nothing here yet. ${isCur ? 'Type below and press Enter to add a note.' : 'Open this one and type below to add to it.'}</p>`;
+    else {
+      body += todo.length ? `<ul class="list">${todo.map(i => itemHTML(i, p)).join('')}</ul>` : `<p class="muted-p">Everything here is done.</p>`;
+      if (done.length) {
+        body += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
+        if (S.showDone) body += `<ul class="list">${done.map(i => itemHTML(i, p)).join('')}</ul><button class="clear-done" data-act="clear-done" data-pid="${p.id}">Clear done items</button>`;
+      }
     }
+    h += fold('n:' + p.id, `<span class="grow">${esc(p.name)}${todo.length ? ` <span class="n">· ${todo.length}</span>` : ''}</span>${isCur ? '<span class="tag">Adding here</span>' : ''}`,
+      `<div class="fold-body">${body}</div>`, { cls: 'proj-fold', def: !isCur });
   }
+  h += `<button class="add-slot" data-act="new-project">+ Project</button>`;
   $('#main').innerHTML = h;
-  $('.chip[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 }
 
 function renderOrder() {
@@ -1267,15 +1580,16 @@ function renderDocs() {
 
 const VIEWS = {
   today: { el: '#v-today', render: () => renderToday(), title: () => 'Daily three' },
-  notes: { el: '#v-notes', render: () => renderNotes(), title: () => proj().name },
+  notes: { el: '#v-notes', render: () => renderNotes(), title: () => 'Notes' },
   work: { el: '#v-work', render: () => renderWork(), title: () => 'Workouts' },
   goals: { el: '#v-goals', render: () => renderGoals(), title: () => 'Goals' },
   docs: { el: '#v-docs', render: () => renderDocs(), title: () => 'Standards' },
-  build: { el: '#v-build', render: () => renderBuild(), title: () => S.buildSeg === 'biz' ? 'Businesses' : 'Projects' },
+  build: { el: '#v-build', render: () => renderBuild(), title: () => 'Projects' },
   more: { el: '#v-more', render: () => renderMore(), title: () => 'More' },
-  car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' }
+  car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' },
+  books: { el: '#v-books', render: () => renderBooks(), title: () => 'Books' }
 };
-const MORE_TABS = ['more', 'work', 'docs', 'car'];
+const MORE_TABS = ['more', 'work', 'docs', 'car', 'books'];
 function renderAll() {
   if (!VIEWS[S.tab]) S.tab = 'today';
   for (const [k, v] of Object.entries(VIEWS)) $(v.el).hidden = k !== S.tab;
@@ -1284,6 +1598,14 @@ function renderAll() {
   document.title = `${VIEWS[S.tab].title()} · Jot`;
   VIEWS[S.tab].render();
 }
+
+$('#today').addEventListener('change', e => {
+  if (!e.target.matches('[data-day-goal]')) return;
+  const v = e.target.value.trim(), d = S.days[viewDay] ??= {};
+  if (v) d._goal = v; else delete d._goal;
+  save();
+});
+$('#today').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.matches('[data-day-goal]')) { e.preventDefault(); e.target.blur(); } });
 
 /* ---------- quick add ---------- */
 $('#quick').addEventListener('submit', e => {
@@ -1298,7 +1620,8 @@ $('#quick').addEventListener('submit', e => {
     if (hit) { target = hit; text = (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim(); }
   }
   if (!text) return;
-  target.items.unshift({ id: uid(), text, note: '', done: false, subs: [], created: Date.now() });
+  const { title, note } = autoTitle(text, true);
+  target.items.unshift({ id: uid(), text: title, note, done: false, subs: [], created: Date.now() });
   q.value = ''; save(); renderNotes();
   if (target.id !== S.current) toast(`Added to ${target.name}`);
   q.focus();
@@ -1375,8 +1698,14 @@ document.addEventListener('click', async e => {
 
   switch (b.dataset.act) {
     /* daily */
-    case 'day-prev': viewDay = addDays(viewDay, -1); renderToday(); break;
-    case 'day-next': viewDay = addDays(viewDay, 1); renderToday(); break;
+    case 'quote-next': quoteShift++; renderToday(); break;
+    case 'day-prev': case 'day-next': {
+      const d = b.dataset.act === 'day-next' ? 1 : -1;
+      // in the Events view the arrows page through months
+      if (dailySeg === 'events') { const f = parse((calMonth || todayKey().slice(0, 7)) + '-01'); f.setMonth(f.getMonth() + d); calMonth = dkey(f).slice(0, 7); }
+      else { viewDay = addDays(viewDay, d); flowReorder = false; }
+      renderToday(); break;
+    }
     case 'goto': if (viewDay === addDays(todayKey(), -1) && b.dataset.day === todayKey()) { (S.days[viewDay] ??= {})._reviewed = true; save(); }
       viewDay = b.dataset.day; renderToday(); window.scrollTo({ top: 0, behavior: 'smooth' }); break;
     case 'pick': openPicker(viewDay, b.dataset.slot); break;
@@ -1387,16 +1716,28 @@ document.addEventListener('click', async e => {
       if (cur.subId) entry.subId = cur.subId;
       if (cur.repeat) entry.repeat = cur.repeat;
       setSlot(viewDay, b.dataset.slot, entry);
+      let msg = '';
       if (entry.noteId) {
         const f = findItem(entry.noteId);
-        if (f.it && entry.subId) { const sb = f.it.subs.find(x => x.id === entry.subId); if (sb) sb.done = entry.done; }
-        else if (f.it && !f.p.virtual) { f.it.done = entry.done; f.it.doneAt = entry.done ? Date.now() : null; }
+        if (f.it && entry.subId) { const sb = f.it.subs.find(x => x.id === entry.subId); if (sb) sb.done = entry.done; msg = 'Step checked off in your notes'; }
+        else if (f.it && !f.p.virtual) { f.it.done = entry.done; f.it.doneAt = entry.done ? Date.now() : null; msg = 'Note checked off too'; }
+        else if (f.it) {
+          // project worktime: finishing it logs an update on the project; unchecking takes it back
+          f.it.log = (f.it.log || []).filter(l => l.id !== cur.logId);
+          if (entry.done) {
+            entry.logId = uid();
+            const dur = entry.task.match(/\(([^)]+)\)$/)?.[1];
+            f.it.log.unshift({ id: entry.logId, date: viewDay, text: `Worked ${dur || 'on it'} (daily three)` });
+            f.it.updated = Date.now(); msg = `Logged in ${f.it.text} updates`;
+          }
+        }
       }
       save(); renderToday();
-      if (entry.noteId && entry.done) toast(entry.subId ? 'Step checked off in your notes' : 'Note checked off too');
+      if (entry.done && msg) toast(msg);
       break;
     }
     case 'pick-note': { const f = findItem(b.dataset.id); if (f.it) applyPick(f.it.text, f.it.id); break; }
+    case 'pick-work': { const f = findItem(b.dataset.id); if (f.it) applyPick(`Work on ${f.it.text} (1 hr)`, f.it.id); break; }
     case 'pick-sub': {
       const f = findItem(b.dataset.id), sb = f.it?.subs.find(x => x.id === b.dataset.sub);
       if (sb) applyPick(sb.text, f.it.id, sb.id);
@@ -1473,8 +1814,9 @@ document.addEventListener('click', async e => {
       }
       break;
     case 'toggle-done': S.showDone = !S.showDone; save(); renderNotes(); break;
+    case 'pri': it.pri = +b.dataset.v || undefined; save(); renderNotes(); break;
     case 'clear-done': {
-      const cp = proj(), n = cp.items.filter(i => i.done).length;
+      const cp = proj(b.dataset.pid), n = cp.items.filter(i => i.done).length;
       if (await ask({ title: `Clear ${n} done item${n > 1 ? 's' : ''}?`, body: 'They will be removed from this project.', ok: 'Clear', danger: true })) {
         cp.items = cp.items.filter(i => !i.done); save(); renderNotes();
       }
@@ -1482,7 +1824,7 @@ document.addEventListener('click', async e => {
     }
     case 'new-project': {
       const name = await ask({ title: 'New project', input: '', placeholder: 'Project name', ok: 'Create' });
-      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; open = null; save(); renderNotes(); }
+      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; S.fold['n:' + np.id] = false; open = null; save(); renderNotes(); }
       break;
     }
     case 'menu': {
@@ -2064,10 +2406,82 @@ function renderMore() {
   const row = (tab, name, sub, cls = '') => `<button class="hub-row" data-tab="${tab}"><span class="lr-main"><b>${name}</b><small class="${cls}">${esc(sub)}</small></span><span class="chev">›</span></button>`;
   $('#more').innerHTML = row('work', 'Workouts', wk ? `${plural(wk, 'workout')} this week` : 'Nothing logged this week')
     + row('docs', 'Standards', S.docs.length ? `${S.docs.length} saved: workouts, recipes, lists` : 'Workouts, recipes, grocery lists')
+    + row('books', 'Books', bookSummary())
     + row('car', 'Car', !curCar() ? 'Track and predict maintenance and inspections' : al.length ? `${al[0].it.name}: ${dueText(al[0].d).toLowerCase()}` : 'Nothing due in the next 30 days',
           al.length ? (al[0].d.state === 'over' ? 'due-over' : 'due-soon') : '')
     + `<h3 class="day-h">Backup</h3><div class="btn-row"><button class="pill" data-act="m-cloud">Cloud backup</button><span id="cloud-summary" class="muted-p" role="status"></span><button class="pill" data-act="m-export">Export backup</button><button class="pill" data-act="m-import">Import backup</button></div>`;
   cloud?.refreshUI();
+}
+
+/* ---------- books ---------- */
+const BOOK_ST = { reading: 'Reading now', want: 'To read', done: 'Finished' };
+function bookSummary() {
+  const r = S.books.filter(b => b.status === 'reading'), w = S.books.filter(b => b.status === 'want').length;
+  if (!S.books.length) return 'A list of books to read';
+  return [r.length ? `Reading ${r[0].title}${r.length > 1 ? ` and ${r.length - 1} more` : ''}` : '', w ? `${w} to read` : ''].filter(Boolean).join(' · ') || `${plural(S.books.length, 'book')} finished`;
+}
+let openBook = null;
+function bookRow(b) {
+  const notes = b.notes || [], isOpen = openBook === b.id;
+  const sub = [b.author, b.status === 'done' && b.finished ? `finished ${fmtDate(b.finished)}` : '', notes.length ? plural(notes.length, 'note') : ''].filter(Boolean).join(' · ');
+  const next = b.status === 'want' ? 'Start' : b.status === 'reading' ? 'Finish' : '';
+  let h = `<div class="book-row">
+    <button class="lrow" data-act="k-open" data-id="${b.id}" aria-expanded="${isOpen}"><span class="lr-main"><b>${esc(b.title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>
+    <button class="mic" data-act="k-dictate" data-id="${b.id}" aria-label="Dictate a note on ${esc(b.title)}" title="Dictate a note">${MIC}</button>
+    ${next ? `<button class="soft-btn" data-act="k-next" data-id="${b.id}">${next}</button>` : ''}</div>`;
+  if (isOpen) {
+    if (b.note) h += `<p class="muted-p">${esc(b.note)}</p>`;
+    h += notes.length ? `<ul class="book-notes">${[...notes].reverse().map(n => `<li data-bn="${n.id}"><span class="bn-t"><small>${fmtDay(n.date)}${n.page ? ` · p. ${n.page}` : ''}</small>${esc(n.text)}</span>
+      <button class="x" data-act="k-note-del" data-id="${b.id}" aria-label="Delete note">×</button></li>`).join('')}</ul>`
+      : `<p class="muted-p">No notes yet. Tap the mic while you read to talk one in.</p>`;
+    h += `<div class="book-acts"><button class="soft-btn" data-act="k-dictate" data-id="${b.id}">Dictate a note</button><button class="soft-btn" data-act="k-type" data-id="${b.id}">Type a note</button><button class="soft-btn" data-act="k-edit" data-id="${b.id}">Edit book</button></div>`;
+  }
+  return h;
+}
+function renderBooks() {
+  let h = '';
+  for (const [st, name] of Object.entries(BOOK_ST)) {
+    // to-read keeps the order you added them; finished shows the latest first
+    let list = S.books.filter(b => b.status === st);
+    if (st === 'done') list = list.sort((a, b) => (b.finished || '').localeCompare(a.finished || ''));
+    if (list.length) h += fold('bk:' + st, `${name} · ${list.length}`, `<div class="card book-list">${list.map(bookRow).join('')}</div>`, { sumCls: 'day-h', def: st === 'done' });
+  }
+  if (!S.books.length) h = `<p class="empty small">Keep the books you want to read here, move them to Reading now when you start, and keep a record of what you’ve finished.</p>`;
+  $('#books').innerHTML = h + `<button class="add-slot" data-act="k-new">+ Add a book</button>`;
+}
+async function bookClick(act, el) {
+  const b = S.books.find(x => x.id === el.dataset.id);
+  if (act === 'k-open' && b) { openBook = openBook === b.id ? null : b.id; return renderBooks(); }
+  if (act === 'k-dictate' && b) return openVoice({ book: b.id });
+  if (act === 'k-note-del' && b) {
+    const id = el.closest('[data-bn]')?.dataset.bn;
+    if (!await ask({ title: 'Delete this note?', ok: 'Delete', danger: true })) return;
+    b.notes = (b.notes || []).filter(n => n.id !== id);
+  } else if (act === 'k-type' && b) {
+    const r = await form({ title: `Note on ${b.title}`, ok: 'Add', fields: [{ key: 'text', label: 'Note', type: 'area' }, { key: 'page', label: 'Page', type: 'number', half: 1, ph: 'Optional' }] });
+    if (!r?.text) return;
+    addBookNote(b, r.text, r.page);
+  } else if (act === 'k-next' && b) {
+    if (b.status === 'want') { b.status = 'reading'; b.started = todayKey(); toast(`Started ${b.title}`); }
+    else { b.status = 'done'; b.finished = todayKey(); toast(`Finished ${b.title}`); }
+  } else if (act === 'k-new' || (act === 'k-edit' && b)) {
+    const r = await form({ title: b ? 'Edit book' : 'Add a book', ok: b ? 'Save' : 'Add', del: !!b, values: b || { status: 'want' }, fields: [
+      { key: 'title', label: 'Title' }, { key: 'author', label: 'Author', ph: 'Optional' },
+      { key: 'status', label: 'Status', type: 'select', options: Object.entries(BOOK_ST) },
+      { key: 'note', label: 'Notes', type: 'area', ph: 'Who recommended it, why, thoughts' }] });
+    if (!r) return;
+    if (r === 'delete') { S.books = S.books.filter(x => x !== b); save(); renderBooks(); return toast('Book removed'); }
+    if (!r.title) return toast('Give the book a title');
+    if (r.status === 'done' && b?.status !== 'done') r.finished = todayKey();
+    if (r.status === 'reading' && b?.status !== 'reading') r.started = todayKey();
+    if (b) Object.assign(b, r); else S.books.push({ id: uid(), added: Date.now(), ...r });
+  } else return;
+  save(); renderBooks();
+}
+
+function addBookNote(b, text, page) {
+  (b.notes ??= []).push({ id: uid(), date: todayKey(), text, ...(page ? { page } : {}) });
+  openBook = b.id;
 }
 
 /* ---------- projects and businesses ---------- */
@@ -2143,7 +2557,7 @@ function pmList() {
   let h = '';
   for (const [st, name] of Object.entries(PM_STATUS)) {
     const ps = S.pm.filter(p => p.status === st);
-    if (ps.length) h += `<h3 class="day-h">${name} · ${ps.length}</h3>` + ps.map(pmCard).join('');
+    if (ps.length) h += fold('pm:' + st, `${name} · ${ps.length}`, ps.map(pmCard).join(''), { sumCls: 'day-h', def: st === 'done' });
   }
   if (!S.pm.length) h = `<p class="empty small">Notes hold the ideas. This is where the ones you’ve started live, each with its steps, target date, costs and a running log.</p>`;
   const bl = backlog(), n = bl ? bl.items.filter(i => !i.done).length : 0;
@@ -2173,14 +2587,19 @@ function pmDetail(p) {
     <div class="card"><h2>Notes</h2><textarea class="field" data-bedit="note" placeholder="Links, part numbers, measurements, ideas" aria-label="Notes">${esc(p.note || '')}</textarea></div>
     <div class="actions"><span></span><button class="danger-btn" data-act="b-del">Delete project</button></div>`;
 }
+function bizCard(e) {
+  const { inc, out } = bizMoney(e), next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid').length;
+  const bits = [next ? `Next: ${next.text}` : '', open ? `${plural(open, bizLabel(e, 'orders').toLowerCase().replace(/s$/, ''))} open` : '', inc || out ? `${usd(inc - out)} profit so far` : ''].filter(Boolean);
+  return `<button class="card pcard" data-act="b-open" data-kind="biz" data-id="${e.id}">
+    <span class="goal-top"><b class="pc-name">${esc(e.text)}</b><span class="tag${e.stage === 'paused' ? ' grey' : ''}">${BIZ_STAGES[e.stage] || ''}</span></span>
+    <span class="gs-sub">${esc(BIZ_TYPES[e.type]?.label || '')}</span>${bits.length ? `<span class="gs-sub">${esc(bits.join(' · '))}</span>` : ''}</button>`;
+}
 function bizList() {
-  let h = S.biz.map(e => {
-    const { inc, out } = bizMoney(e), next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid').length;
-    const bits = [next ? `Next: ${next.text}` : '', open ? `${plural(open, bizLabel(e, 'orders').toLowerCase().replace(/s$/, ''))} open` : '', inc || out ? `${usd(inc - out)} profit so far` : ''].filter(Boolean);
-    return `<button class="card pcard" data-act="b-open" data-kind="biz" data-id="${e.id}">
-      <span class="goal-top"><b class="pc-name">${esc(e.text)}</b><span class="tag${e.stage === 'paused' ? ' grey' : ''}">${BIZ_STAGES[e.stage] || ''}</span></span>
-      <span class="gs-sub">${esc(BIZ_TYPES[e.type]?.label || '')}</span>${bits.length ? `<span class="gs-sub">${esc(bits.join(' · '))}</span>` : ''}</button>`;
-  }).join('');
+  let h = '';
+  for (const [st, name] of Object.entries(BIZ_STAGES)) {
+    const es = S.biz.filter(e => (BIZ_STAGES[e.stage] ? e.stage : 'idea') === st);
+    if (es.length) h += fold('bz:' + st, `${name} · ${es.length}`, es.map(bizCard).join(''), { sumCls: 'day-h', def: st === 'paused' });
+  }
   if (!S.biz.length) h = `<p class="empty small">Each business gets its own launch roadmap, products or services, orders, money in and out, equipment list and research notes. You choose which sections it needs when you set it up.</p>`;
   return h + `<button class="add-slot" data-act="b-new-biz">+ New business</button>`;
 }
@@ -2247,13 +2666,13 @@ function bizDetail(e) {
 function renderBuild() {
   let e = buildEnt();
   if (openBuild && !e) openBuild = null;
-  const seg = S.buildSeg === 'biz' ? 'biz' : 'pm';
   $('#build-back').hidden = !e;
-  $('#build-title').textContent = e ? e.text : seg === 'pm' ? 'Projects' : 'Businesses';
-  $('#build-seg').hidden = !!e;
-  $('#build-seg').innerHTML = [['pm', 'Projects', S.pm.filter(p => p.status === 'active').length], ['biz', 'Businesses', S.biz.length]].map(([k, n, c]) =>
-    `<button data-act="b-seg" data-v="${k}" aria-pressed="${k === seg}">${n}${c ? ` · ${c}` : ''}</button>`).join('');
-  $('#build').innerHTML = e ? (openBuild.kind === 'pm' ? pmDetail(e) : bizDetail(e)) : seg === 'pm' ? pmList() : bizList();
+  $('#build-title').textContent = e ? e.text : 'Projects';
+  // projects and businesses share one page, each a collapsible section
+  const active = S.pm.filter(p => p.status === 'active').length;
+  $('#build').innerHTML = e ? (openBuild.kind === 'pm' ? pmDetail(e) : bizDetail(e))
+    : fold('b:pm', `<span class="grow">Projects</span>${active ? `<small>${active} active</small>` : ''}`, pmList(), { cls: 'big-fold' })
+    + fold('b:biz', `<span class="grow">Businesses</span>${S.biz.length ? `<small>${S.biz.length}</small>` : ''}`, bizList(), { cls: 'big-fold' });
   document.title = `${e ? e.text : VIEWS.build.title()} · Jot`;
 }
 function showBuild(kind, id) {
@@ -2363,8 +2782,9 @@ async function buildClick(act, b) {
 $('#build').addEventListener('input', ev => {
   const el = ev.target, k = el.dataset.bedit, e = buildEnt();
   if (!k || !e || el.type === 'date') return;
-  const v = el.value, relink = (match, text) => { for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s && match(s)) s.task = text; };
-  if (k === 'text') { if (!v.trim()) return; e.text = v.trim(); $('#build-title').textContent = e.text; relink(s => s.noteId === e.id && !s.subId, e.text); }
+  const v = el.value, relink = (match, text) => { for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s && match(s)) s.task = typeof text === 'function' ? text(s.task) : text; };
+  if (k === 'text') { if (!v.trim()) return; e.text = v.trim(); $('#build-title').textContent = e.text;
+    relink(s => s.noteId === e.id && !s.subId, t => { const m = t.match(/^Work on .+ (\([^)]+\))$/); return m ? `Work on ${e.text} ${m[1]}` : e.text; }); }
   else if (k === 'sub') { const s = e.subs.find(x => x.id === el.closest('.sub').dataset.sub); if (!s || !v.trim()) return; s.text = v.trim(); relink(x => x.subId === s.id, s.text); }
   else if (k === 'budget') e.budget = Math.max(0, +v || 0);
   else if (k === 'doc-title' || k === 'doc-body') {
@@ -2399,22 +2819,37 @@ $('#build').addEventListener('keydown', ev => {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, voiceBase = '';
 const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
-// short dictation is the title; long dictation gets a title from its first clause and keeps the full text as the note
-function autoTitle(raw) {
-  const text = raw.replace(/\s+/g, ' ').trim();
-  if (text.split(' ').length <= 9) return { title: capFirst(text.replace(/[.!?]+$/, '')), note: '' };
-  const s = text.replace(/^((ok(ay)?|so|um+|uh+|hey|well|alright|and|yeah)[,.]?\s+)+/i, '')
-    .replace(/^(note to self[,:]?|remind me (to|that)|remember to|don'?t forget to|i (need|want|have|should|would like) to|i should|i need|make sure (to|i)|i was thinking( that| about)?|i'?m thinking( that| about)?|idea[:,]?)\s+/i, '');
-  let w = s.split(/[.!?]\s|[,;:]\s|\s(?:because|so that|so i|and then|which|but)\s/i)[0].split(' ');
-  if (w.length < 3) w = s.split(' ');
-  w = w.slice(0, 8);
-  while (w.length > 3 && /^(and|or|the|a|an|to|of|for|with|in|on|at|that|is|my|i|so|from|into|like|where|when|can|could|it|this)$/i.test(w.at(-1))) w.pop();
-  return { title: capFirst(w.join(' ').replace(/[.,!?;:]+$/, '')), note: capFirst(text) };
+// titles are short and punchy: filler and lead-ins are dropped and the first clause is cut to about five key words.
+// Anything longer than the title keeps its full text as the note.
+const TITLE_WORDS = 5;
+const LEAD_FILLER = /^((ok(ay)?|so|um+|uh+|hey|well|alright|and|yeah|also|basically|actually|just|like)[,.]?\s+)+/i;
+const LEAD_IN = /^(note to self[,:]?|reminder[,:]?|remind me (to|that)|remember to|don'?t forget (to|that)|i (really )?(need|want|have|should|would like|gotta|got) to|i should|i need|we (need|should|have) to|need to|have to|gotta|make sure (to|i|that)|i (was|am|'?m) thinking( that| about)?|i think( that)?|idea[:,]?|maybe|probably)\s+/i;
+const DROP_WORDS = /^(the|a|an|some|really|just|actually|basically|maybe|probably|very|definitely|literally|kinda|sorta|gonna|um+|uh+)$/i;
+const TAIL_WORDS = /^(and|or|the|a|an|to|of|for|with|in|on|at|that|is|my|i|so|from|into|like|where|when|can|could|it|this|about|by|but|if|then)$/i;
+function punchyTitle(text) {
+  let s = text;
+  for (let n = 0; n < 3; n++) s = s.replace(LEAD_FILLER, '').replace(LEAD_IN, '');
+  let w = s.split(/[.!?]\s|[,;:]\s|\s(?:because|so that|so i|and then|which|but|since)\s/i)[0].split(' ');
+  if (w.length < 2) w = s.split(' ');
+  const kept = w.filter(x => !DROP_WORDS.test(x.replace(/[^\w']/g, '')));
+  if (kept.length) w = kept;
+  w = w.slice(0, TITLE_WORDS);
+  while (w.length > 2 && TAIL_WORDS.test(w.at(-1).replace(/[^\w']/g, ''))) w.pop();
+  return capFirst(w.join(' ').replace(/[.,!?;:]+$/, '')) || capFirst(text);
 }
+// voice notes always get a punchy title; typed notes only once they run past a short title's length
+function autoTitle(raw, typed = false) {
+  const text = raw.replace(/\s+/g, ' ').trim(), words = text.split(' ').length;
+  if (typed && words <= TITLE_WORDS + 2) return { title: text, note: '' };
+  const title = punchyTitle(text);
+  return { title, note: words > TITLE_WORDS ? capFirst(text) : '' };
+}
+// voiceCtx.book set: dictating notes on a book while reading; they go on the book, not into Notes
+let voiceCtx = {};
 function voiceText(v) {
   if (v !== undefined) $('#voice-text').value = v;
   const t = $('#voice-text').value.trim();
-  $('#voice-title-row').hidden = !t;
+  $('#voice-title-row').hidden = !t || !!voiceCtx.book;
   $('#voice-title').textContent = t ? autoTitle(t).title : '';
 }
 function voiceStatus(msg, on = false) { $('#voice-status').textContent = msg; $('#voice-pulse').classList.toggle('on', on); $('#voice-mic').textContent = on ? 'Stop' : 'Keep talking'; }
@@ -2472,7 +2907,12 @@ function voiceListen() {
   };
   try { me.start(); } catch (e) { rec = null; voiceStatus('Tap Keep talking to start.'); }
 }
-function openVoice() {
+function openVoice(ctx = {}) {
+  voiceCtx = ctx;
+  const book = ctx.book && S.books.find(x => x.id === ctx.book);
+  $('#voice-head').textContent = book ? `Note on ${book.title}` : 'Voice note';
+  $('#voice-page-row').hidden = $('#voice-next').hidden = !book;
+  $('#voice-page').value = '';
   voiceText('');
   $('#voice-mic').hidden = !SR;
   voiceStatus(SR ? 'Starting…' : 'This browser can’t listen on its own. Use the mic on your keyboard here and Jot will still title the note.');
@@ -2483,9 +2923,20 @@ function voiceClick(act) {
   if (act === 'v-open') return openVoice();
   if (act === 'v-mic') { if (rec) rec.stop(); else voiceListen(); return; }
   if (act === 'v-cancel') return $('#voice').close();
-  if (act === 'v-save') {
+  if (act === 'v-save' || act === 'v-next') {
     const text = $('#voice-text').value.trim();
     if (!text) return toast('Nothing to save yet');
+    const book = voiceCtx.book && S.books.find(x => x.id === voiceCtx.book);
+    if (book) {
+      addBookNote(book, capFirst(text), +$('#voice-page').value || null);
+      save(); if (S.tab === 'books') renderBooks();
+      if (act === 'v-next') {
+        // keep the dialog and the page open and start listening again for the next thought
+        try { rec?.abort(); } catch (e) {}
+        rec = null; voiceText(''); toast('Saved. Listening for the next one'); voiceListen();
+      } else { $('#voice').close(); toast(`Note added to ${book.title}`); }
+      return;
+    }
     const { title, note } = autoTitle(text), p = proj(), it = { id: uid(), text: title, note, done: false, subs: [], created: Date.now() };
     p.items.unshift(it); open = note ? it.id : null; S.tab = 'notes';
     $('#voice').close(); save(); renderAll(); toast(`Added “${title}” to ${p.name}`);
@@ -2503,6 +2954,8 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const act = b.dataset.act, pre = act.slice(0, 2);
   if (pre === 'c-') carClick(act, b);
+  else if (pre === 'k-') bookClick(act, b);
+  else if (/^(fl-|fo-|cal-day$|daily-seg$)/.test(act)) dailyClick(act, b);
   else if (pre === 'b-') buildClick(act, b);
   else if (pre === 'v-') voiceClick(act);
   else if (act === 'm-cloud') cloud?.open();
