@@ -365,6 +365,16 @@ summary.day-h{padding:4px 0}
 .cell .dot,.grid-key .dot{flex:none;display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--ink)}
 .key-sw.g{background:var(--green)}
 .ev-row small{display:block;color:var(--muted);font-size:.76rem}
+/* notifications */
+.nt-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.nt-row .chk{flex:1;margin:0}
+.nt-time{flex:none;width:auto;padding:7px 8px}
+.nt-steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+.nt-steps li span{display:block;margin-top:3px;color:var(--muted);font-size:.9rem;line-height:1.45}
+.nt-steps .soft-btn{display:block;margin-top:8px}
+.nt-steps code{font-size:.85em;background:#E9EBE8;border-radius:4px;padding:1px 4px}
+.nt-copybox{margin-top:12px;min-height:120px;font-family:ui-monospace,monospace;font-size:.75rem}
+#v-notify .btn-row{margin-top:10px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -430,6 +440,12 @@ summary.day-h{padding:4px 0}
 <section id="v-books" hidden>
   <header><div class="wrap"><div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Books</h1></div></div></header>
   <main><div class="wrap" id="books"></div></main>
+</section>
+
+<!-- Notifications -->
+<section id="v-notify" hidden>
+  <header><div class="wrap"><div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Notifications</h1></div></div></header>
+  <main><div class="wrap" id="notify"></div></main>
 </section>
 
 <!-- More -->
@@ -1530,9 +1546,10 @@ const VIEWS = {
   build: { el: '#v-build', render: () => renderBuild(), title: () => 'Projects' },
   more: { el: '#v-more', render: () => renderMore(), title: () => 'More' },
   car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' },
-  books: { el: '#v-books', render: () => renderBooks(), title: () => 'Books' }
+  books: { el: '#v-books', render: () => renderBooks(), title: () => 'Books' },
+  notify: { el: '#v-notify', render: () => renderNotify(), title: () => 'Notifications' }
 };
-const MORE_TABS = ['more', 'work', 'docs', 'car', 'books'];
+const MORE_TABS = ['more', 'work', 'docs', 'car', 'books', 'notify'];
 function renderAll() {
   if (!VIEWS[S.tab]) S.tab = 'today';
   for (const [k, v] of Object.entries(VIEWS)) $(v.el).hidden = k !== S.tab;
@@ -2349,11 +2366,143 @@ function renderMore() {
   $('#more').innerHTML = row('work', 'Workouts', wk ? `${plural(wk, 'workout')} this week` : 'Nothing logged this week')
     + row('docs', 'Standards', S.docs.length ? `${S.docs.length} saved: workouts, recipes, lists` : 'Workouts, recipes, grocery lists')
     + row('books', 'Books', bookSummary())
+    + row('notify', 'Notifications', notifySummary())
     + row('car', 'Car', !curCar() ? 'Track and predict maintenance and inspections' : al.length ? `${al[0].it.name}: ${dueText(al[0].d).toLowerCase()}` : 'Nothing due in the next 30 days',
           al.length ? (al[0].d.state === 'over' ? 'due-over' : 'due-soon') : '')
     + `<h3 class="day-h">Backup</h3><div class="btn-row"><button class="pill" data-act="m-cloud">Cloud backup</button><span id="cloud-summary" class="muted-p" role="status"></span><button class="pill" data-act="m-export">Export backup</button><button class="pill" data-act="m-import">Import backup</button></div>`;
   cloud?.refreshUI();
 }
+
+/* ---------- notifications ---------- */
+// Reminders are sent by the jot-push function on your Supabase project (supabase/ in this repo). It reads your
+// cloud backup, so these settings live in S.notify and sync like everything else. Each device subscribes on its own.
+const NOTIFY_DEFAULTS = { items: true, lead: 10, amOn: true, am: '07:00', pmOn: true, pm: '19:30' };
+const LEADS = [[0, 'At the time'], [5, '5 min before'], [10, '10 min before'], [15, '15 min before'], [30, '30 min before'], [60, '1 hour before']];
+const deviceTz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+const b64u = bytes => btoa(String.fromCharCode(...new Uint8Array(bytes))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)), c => c.charCodeAt(0));
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+let setupText = {};
+function notifySettings() { S.notify = { ...NOTIFY_DEFAULTS, ...(S.notify || {}) }; return S.notify; }
+function notifySummary() {
+  if (!S.notify?.on) return 'Reminders for scheduled items and your Daily 3';
+  const n = notifySettings();
+  return [n.items ? 'Scheduled items' : '', n.amOn ? `morning ${fmtTime(n.am)}` : '', n.pmOn ? `evening ${fmtTime(n.pm)}` : ''].filter(Boolean).join(', ') || 'All reminders off';
+}
+async function pushReg() {
+  if (!pushSupported()) return null;
+  // ready never settles when the service worker can't install, so don't wait on it forever
+  return Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]);
+}
+function renderNotify() {
+  const n = notifySettings();
+  const time = (key, on, label, hint) => `<div class="nt-row"><label class="chk"><input type="checkbox" data-nt="${on}"${n[on] ? ' checked' : ''}> ${label}</label>
+    <input class="field nt-time" type="time" data-nt="${key}" value="${n[key]}" aria-label="${label} time"></div>${hint ? `<p class="muted-p small">${hint}</p>` : ''}`;
+  let h = `<div class="card"><h2>This device</h2><p class="muted-p" id="nt-status">Checking…</p><p class="muted-p small" id="nt-check" hidden></p><div class="btn-row" id="nt-btns"></div></div>
+    <div class="card"><h2>Remind me about</h2>
+      <div class="nt-row"><label class="chk"><input type="checkbox" data-nt="items"${n.items ? ' checked' : ''}> Scheduled items in the flow of the day</label>
+        <select class="field nt-time" data-nt="lead" aria-label="How early">${LEADS.map(([v, l]) => `<option value="${v}"${+n.lead === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+      ${time('am', 'amOn', 'Morning Daily 3 nudge', 'Your tasks for the day, or a reminder to pick them.')}
+      ${time('pm', 'pmOn', 'Evening Daily 3 check-in', 'Only if the Daily 3 isn’t done yet.')}
+      <p class="muted-p small">Reminders follow what’s in your cloud backup, so changes reach them after Jot syncs.</p></div>`;
+  const step = (num, title, body) => `<li><b>${num}. ${title}</b><span>${body}</span></li>`;
+  h += fold('nt:setup', 'One-time Supabase setup', `<div class="card"><ol class="nt-steps">
+      ${step(1, 'Run the setup SQL', `In Supabase, open <b>SQL Editor</b>, start a new query, paste this and press <b>Run</b>. Your project address is already filled in.
+        <button class="soft-btn" data-act="nt-copy" data-v="sql">Copy setup SQL</button>`)}
+      ${step(2, 'Add the reminder function', `Open <b>Edge Functions</b> → <b>Deploy a new function</b> → <b>Via Editor</b>. Name it <code>jot-push</code>, replace the sample code with this and deploy.
+        <button class="soft-btn" data-act="nt-copy" data-v="fn">Copy function code</button>`)}
+      ${step(3, 'Turn off JWT verification', `In the <code>jot-push</code> function’s settings, switch off the JWT verification option (named “Verify JWT” or “Enforce JWT verification”) and save. The scheduled check proves itself with its own secret.`)}
+      ${step(4, 'Turn it on here', `Tap <b>Turn on for this device</b> above, allow notifications, then <b>Send a test</b>. Do this on each phone or computer you want reminders on.`)}
+    </ol><textarea class="field nt-copybox" id="nt-copybox" readonly hidden aria-label="Text to copy"></textarea></div>`, { sumCls: 'day-h', def: !!n.on });
+  $('#notify').innerHTML = h;
+  notifyStatus();
+  // load the setup files now so the copy buttons can write to the clipboard straight from the tap
+  for (const [k, path] of [['sql', 'supabase/push-setup.sql'], ['fn', 'supabase/functions/jot-push/index.ts']])
+    if (!setupText[k]) fetch(path, { cache: 'no-store' }).then(r => r.ok ? r.text() : null).then(t => { if (t) setupText[k] = t; }).catch(() => {});
+}
+async function notifyStatus() {
+  const st = $('#nt-status'), btns = $('#nt-btns');
+  if (!st) return;
+  const show = (msg, buttons = '') => { st.textContent = msg; btns.innerHTML = buttons; };
+  if (!pushSupported()) return show('This browser can’t get push notifications. On iPhone, add Jot to your Home Screen and open it from there (iOS 16.4 or later).');
+  if (!cloud?.info()) return show('Turn on Cloud backup first. Reminders are sent from your Supabase project.', `<button class="pill" data-act="m-cloud">Cloud backup</button>`);
+  if (Notification.permission === 'denied') return show('Notifications are blocked for Jot. Allow them in your browser or phone settings, then come back here.');
+  const reg = await pushReg();
+  if (!reg) return show('Jot’s offline support isn’t running here, which push needs. Open Jot from its web address and try again.');
+  const sub = await reg.pushManager.getSubscription();
+  show(sub ? 'On for this device.' : 'Off for this device.', sub
+    ? `<button class="pill" data-act="nt-test">Send a test</button><button class="pill" data-act="nt-off">Turn off for this device</button>`
+    : `<button class="pill" data-act="nt-on">Turn on for this device</button>`);
+}
+function notifyError(e) {
+  return e.status === 404 ? 'Supabase isn’t set up for notifications yet. Do the one-time setup below.'
+    : e.status === 401 || e.status === 403 ? 'Supabase refused the request. Check that step 1 of the setup ran.'
+    : e.message && !e.status ? e.message : 'Couldn’t reach Supabase. Check your connection and try again.';
+}
+async function notifyClick(act, b) {
+  const st = $('#nt-status');
+  try {
+    if (act === 'nt-copy') {
+      const text = b.dataset.v === 'sql' ? setupText.sql?.replaceAll('YOUR-PROJECT-URL', cloud?.info()?.url || 'YOUR-PROJECT-URL') : setupText.fn;
+      if (!text) return toast('Still loading. Try again in a moment.');
+      if (b.dataset.v === 'sql' && !cloud?.info()) toast('Sign in to Cloud backup first so your project address is filled in');
+      try { await navigator.clipboard.writeText(text); toast('Copied'); }
+      catch (e) { const box = $('#nt-copybox'); box.hidden = false; box.value = text; box.focus(); box.select(); toast('Select all and copy from the box below'); }
+      return;
+    }
+    if (act === 'nt-on') {
+      if (await Notification.requestPermission() !== 'granted') { toast('Notifications weren’t allowed'); return notifyStatus(); }
+      st.textContent = 'Turning on…';
+      const { uid } = cloud.info();
+      // one key pair per account signs every push; the first device to turn this on makes it
+      let [keys] = await cloud.call(`/rest/v1/jot_push_keys?select=vapid_public&user_id=eq.${uid}`);
+      if (!keys) {
+        const pair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+        const made = { user_id: uid, vapid_public: b64u(await crypto.subtle.exportKey('raw', pair.publicKey)), vapid_private: await crypto.subtle.exportKey('jwk', pair.privateKey) };
+        try { [keys] = await cloud.call('/rest/v1/jot_push_keys', { method: 'POST', body: made, prefer: 'return=representation' }); }
+        catch (e) { if (e.status !== 409) throw e; [keys] = await cloud.call(`/rest/v1/jot_push_keys?select=vapid_public&user_id=eq.${uid}`); }
+      }
+      const reg = await pushReg();
+      if (!reg) throw new Error('Jot’s offline support isn’t running here. Reopen Jot and try again.');
+      let sub = await reg.pushManager.getSubscription();
+      if (sub && b64u(sub.options.applicationServerKey) !== keys.vapid_public) { await sub.unsubscribe(); sub = null; }
+      sub ||= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: unb64u(keys.vapid_public) });
+      const j = sub.toJSON();
+      await cloud.call('/rest/v1/jot_push_subs?on_conflict=endpoint', { method: 'POST', prefer: 'resolution=merge-duplicates,return=representation',
+        body: { endpoint: j.endpoint, user_id: uid, p256dh: j.keys.p256dh, auth: j.keys.auth } });
+      Object.assign(notifySettings(), { on: true, tz: deviceTz() });
+      save(); renderNotify(); toast('Notifications are on for this device');
+    } else if (act === 'nt-off') {
+      const sub = await (await pushReg())?.pushManager.getSubscription();
+      if (sub) {
+        await cloud.call(`/rest/v1/jot_push_subs?endpoint=eq.${encodeURIComponent(sub.endpoint)}`, { method: 'DELETE' }).catch(() => {});
+        await sub.unsubscribe();
+      }
+      notifyStatus(); toast('Notifications are off for this device');
+    } else if (act === 'nt-test') {
+      st.textContent = 'Sending a test…';
+      let r;
+      try { r = await cloud.call('/functions/v1/jot-push', { method: 'POST', body: { test: true } }); }
+      catch (e) { throw new Error(e.status === 404 ? 'The jot-push function isn’t deployed yet. Do step 2 of the setup below.' : e.status === 401 ? 'The function turned the test away. Sign in to Cloud backup again.' : 'The jot-push function didn’t answer. Check step 2 of the setup below.'); }
+      notifyStatus();
+      toast(r.sent ? 'Test sent. It should arrive in a few seconds.' : 'No device got it. Turn it off and on again here.');
+      // the scheduled check stamps each run; no recent stamp means reminders aren't going out
+      const ago = r.lastRun ? Math.round((Date.now() - Date.parse(r.lastRun)) / 6e4) : null, chk = $('#nt-check');
+      chk.hidden = false;
+      chk.textContent = ago !== null && ago <= 3 ? `The every-minute reminder check is running (last ran ${ago < 1 ? 'just now' : plural(ago, 'minute') + ' ago'}).`
+        : `The every-minute reminder check ${ago === null ? 'hasn’t run yet' : `last ran ${plural(ago, 'minute')} ago`}. Make sure step 1 ran with your project address and step 3 is done.`;
+      chk.classList.toggle('due-over', !(ago !== null && ago <= 3));
+    }
+  } catch (e) {
+    notifyStatus(); toast(notifyError(e));
+  }
+}
+$('#notify').addEventListener('change', e => {
+  const el = e.target.closest('[data-nt]'); if (!el) return;
+  const n = notifySettings(), k = el.dataset.nt;
+  n[k] = el.type === 'checkbox' ? el.checked : k === 'lead' ? +el.value : el.value || NOTIFY_DEFAULTS[k];
+  n.tz = deviceTz(); save();
+});
 
 /* ---------- books ---------- */
 const BOOK_ST = { reading: 'Reading now', want: 'To read', done: 'Finished' };
@@ -2897,6 +3046,7 @@ document.addEventListener('click', ev => {
   const act = b.dataset.act, pre = act.slice(0, 2);
   if (pre === 'c-') carClick(act, b);
   else if (pre === 'k-') bookClick(act, b);
+  else if (act.startsWith('nt-')) notifyClick(act, b);
   else if (/^(fl-|fo-|cal-day$|daily-seg$)/.test(act)) dailyClick(act, b);
   else if (pre === 'b-') buildClick(act, b);
   else if (pre === 'v-') voiceClick(act);
@@ -2912,6 +3062,8 @@ else if (params.has('today')) S.tab = 'today';
 else if (params.has('dictate')) { S.tab = 'notes'; setTimeout(openVoice, 300); }
 else if (VIEWS[params.get('tab')]) S.tab = params.get('tab');
 migrateGoals();
+// reminders go out in the time zone of the device you last used
+if (S.notify?.on && S.notify.tz !== deviceTz()) S.notify.tz = deviceTz();
 renderAll();
 if (params.has('add')) setTimeout(() => $('#q').focus(), 150);
 navigator.storage?.persist?.().catch(() => {});
