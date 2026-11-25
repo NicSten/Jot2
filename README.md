@@ -41,7 +41,6 @@ In the artifact: ⋯ → Export backup. In the installed app: ⋯ → Import bac
 - Each active project or business has a **Work on … (1 hr)** option in the day planner. Finishing it logs an update on that project.
 - Long typed notes and voice notes get a short title (about five key words, filler dropped), and the full text is kept as the note.
 - Every group in the day planner, the Projects and Businesses sections, and each project stage can be collapsed. Jot remembers what you collapsed on each device.
-- The Daily tab shows a quote each day; tap it for another.
 - **More → Books**: a list of books to read. **Start** moves one to Reading now and **Finish** files it under Finished with the date.
 - **Reading notes**: tap the mic on a book to dictate a note while you read. Add the page if you like. **Save, next note** saves it and keeps listening, so you can capture several thoughts in a row. Tap a book to see its notes, type one instead, or delete one.
 - **Projects** tab: tracked projects (steps, target date, updates log, costs) and, in the Businesses section, one workspace per business with the sections you pick at setup (roadmap, products or services, orders or jobs, money, equipment, notes). Open a note → **Start as project** moves it out of the backlog; the calendar button on a step puts it in the daily three.

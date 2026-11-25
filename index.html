@@ -325,10 +325,6 @@ summary.day-h{padding:4px 0}
 .big-fold{margin-top:16px}
 .big-fold>summary{font-size:1.08rem;font-weight:700;padding:6px 4px}
 .big-fold>summary small{font-weight:500;color:var(--muted);font-size:.85rem}
-/* quote of the day */
-.quote{display:block;width:100%;text-align:left;margin:8px 0 12px;border:0;border-left:3px solid var(--green);background:none;padding:4px 4px 4px 12px;color:var(--ink)}
-.quote q{display:block;font-style:italic;line-height:1.45;quotes:'“' '”'}
-.quote small{display:block;margin-top:4px;color:var(--muted);font-size:.8rem}
 /* priority */
 .pri-hi{color:var(--danger);font-weight:650}
 .pri-lo{color:var(--muted)}
@@ -905,46 +901,6 @@ function linkedDays(noteId) {
   return out.sort();
 }
 
-/* ---------- quote of the day ---------- */
-const QUOTES = [
-  ['Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.', 'Colossians 3:23'],
-  ['Commit to the Lord whatever you do, and he will establish your plans.', 'Proverbs 16:3'],
-  ['The heart of man plans his way, but the Lord establishes his steps.', 'Proverbs 16:9'],
-  ['This is the day that the Lord has made; let us rejoice and be glad in it.', 'Psalm 118:24'],
-  ['Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.', 'Joshua 1:9'],
-  ['Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', 'Galatians 6:9'],
-  ['Trust in the Lord with all your heart and lean not on your own understanding.', 'Proverbs 3:5'],
-  ['Go to the ant, you sluggard; consider its ways and be wise!', 'Proverbs 6:6'],
-  ['I can do all this through him who gives me strength.', 'Philippians 4:13'],
-  ['Be still, and know that I am God.', 'Psalm 46:10'],
-  ['Pray as though everything depended on God. Work as though everything depended on you.', 'Attributed to St. Augustine'],
-  ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', 'Will Durant'],
-  ['The impediment to action advances action. What stands in the way becomes the way.', 'Marcus Aurelius'],
-  ['Waste no more time arguing about what a good man should be. Be one.', 'Marcus Aurelius'],
-  ['It is not that we have a short time to live, but that we waste a lot of it.', 'Seneca'],
-  ['First say to yourself what you would be; and then do what you have to do.', 'Epictetus'],
-  ['Well done is better than well said.', 'Benjamin Franklin'],
-  ['Lost time is never found again.', 'Benjamin Franklin'],
-  ['Do what you can, with what you have, where you are.', 'Theodore Roosevelt'],
-  ['A journey of a thousand miles begins with a single step.', 'Lao Tzu'],
-  ['Small deeds done are better than great deeds planned.', 'Peter Marshall'],
-  ['How we spend our days is, of course, how we spend our lives.', 'Annie Dillard'],
-  ['The best time to plant a tree was twenty years ago. The second best time is now.', 'Proverb'],
-  ['Plans are worthless, but planning is everything.', 'Dwight D. Eisenhower'],
-  ['You miss 100% of the shots you don’t take.', 'Wayne Gretzky'],
-  ['If you want to go fast, go alone. If you want to go far, go together.', 'Proverb'],
-  ['Measure twice, cut once.', 'Carpenter’s proverb'],
-  ['Simplicity is prerequisite for reliability.', 'Edsger W. Dijkstra'],
-  ['Scientists study the world as it is; engineers create the world that has never been.', 'Theodore von Kármán'],
-  ['The best way out is always through.', 'Robert Frost']
-];
-let quoteShift = 0;
-// one quote per day, the same all day; tapping it shows the next one
-function quoteHTML(k) {
-  const n = QUOTES.length, i = (((diffDays('2026-01-01', k) + quoteShift) % n) + n) % n, [q, who] = QUOTES[i];
-  return `<button class="quote" data-act="quote-next" aria-label="Quote of the day. Tap for another."><q>${esc(q)}</q><small>${esc(who)}</small></button>`;
-}
-
 /* ---------- render: today ---------- */
 function dayLabel(k) {
   const t = todayKey(), d = diffDays(t, k);
@@ -1011,7 +967,7 @@ function itemRow(it, rail) {
     </div></li>`;
 }
 function dayView(k) {
-  let h = quoteHTML(k);
+  let h = '';
   const t0 = todayKey(), y = addDays(t0, -1);
   if (k === t0) {
     const ys = dayStats(y), planned = slotsFor(y).some(s => getSlot(y, s.key).task);
@@ -1685,7 +1641,6 @@ document.addEventListener('click', async e => {
 
   switch (b.dataset.act) {
     /* daily */
-    case 'quote-next': quoteShift++; renderToday(); break;
     case 'day-prev': case 'day-next': {
       const d = b.dataset.act === 'day-next' ? 1 : -1;
       // in the Events view the arrows page through months
