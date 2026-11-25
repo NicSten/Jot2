@@ -1,7 +1,7 @@
 const FILES = ['index.html', 'cloud.js', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 const scope = new URL(self.registration.scope);
 const prefix = 'jot:' + scope.pathname + ':';
-const CACHE = prefix + 'v12';
+const CACHE = prefix + 'v13';
 const shell = new URL('index.html', scope);
 const assets = new Set(FILES.map(file => new URL(file, scope).href));
 
