@@ -264,6 +264,10 @@ textarea.doc-body{min-height:220px}
 .chev{flex:none;color:var(--muted);font-size:1.3rem}
 .lrow{display:flex;align-items:center;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;text-align:left;padding:10px 2px}
 .lrows{margin-top:8px}
+.book-row{display:flex;gap:8px;align-items:center;border-top:1px solid var(--line)}
+.book-row:first-child{border-top:0}
+.book-row .lrow{flex:1;min-width:0;border-top:0}
+.book-list{padding-top:4px;padding-bottom:4px}
 .lrows .lrow:first-child{border-top:0}
 .lr-main{flex:1;min-width:0;overflow-wrap:anywhere}
 .lr-main b{display:block;font-weight:600}
@@ -301,6 +305,34 @@ textarea.doc-body{min-height:220px}
 .toast{position:fixed;left:50%;bottom:calc(140px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);opacity:0;
   background:var(--ink);color:#fff;border-radius:10px;padding:10px 16px;font-size:.92rem;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;max-width:90vw}
 .toast.show{opacity:1;transform:translate(-50%,0)}
+/* collapsible sections */
+.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;-webkit-tap-highlight-color:transparent}
+.fold>summary::-webkit-details-marker{display:none}
+.fold>summary::before{content:'';flex:none;width:6px;height:6px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg);transition:transform .15s;margin:0 2px}
+.fold[open]>summary::before{transform:rotate(45deg)}
+.fold>summary .grow{flex:1;min-width:0}
+summary.day-h{padding:4px 0}
+.pick-body summary h3{margin:0}
+.pick-body .fold>summary{margin:16px 0 6px;color:var(--muted)}
+.big-fold{margin-top:16px}
+.big-fold>summary{font-size:1.08rem;font-weight:700;padding:6px 4px}
+.big-fold>summary small{font-weight:500;color:var(--muted);font-size:.85rem}
+.proj-fold{margin-top:10px}
+.proj-fold>summary{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:12px 14px;font-weight:650}
+.proj-fold[open]>summary{border-radius:14px 14px 0 0;border-bottom:0}
+.proj-fold>.list{border-radius:0 0 14px 14px}
+.proj-fold>.fold-body{border:1px solid var(--line);border-top:0;border-radius:0 0 14px 14px;background:var(--surface);padding:4px 14px 12px}
+.proj-fold .n{color:var(--muted);font-weight:500;font-variant-numeric:tabular-nums}
+.proj-fold .fold-body .list{border-radius:12px}
+.proj-fold .section-toggle{margin:10px 0 6px}
+/* quote of the day */
+.quote{display:block;width:100%;text-align:left;margin:8px 0 12px;border:0;border-left:3px solid var(--green);background:none;padding:4px 4px 4px 12px;color:var(--ink)}
+.quote q{display:block;font-style:italic;line-height:1.45;quotes:'“' '”'}
+.quote small{display:block;margin-top:4px;color:var(--muted);font-size:.8rem}
+/* priority */
+.pri-hi{color:var(--danger);font-weight:650}
+.pri-lo{color:var(--muted)}
+.item.low .t{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -324,10 +356,9 @@ textarea.doc-body{min-height:220px}
 <section id="v-notes" hidden>
   <header><div class="wrap">
     <div class="top">
-      <h1 id="title">Inbox</h1>
+      <h1 id="title">Notes</h1>
       <button class="icon-btn" data-act="menu" aria-label="Project options">⋯</button>
     </div>
-    <nav class="chips" id="chips" aria-label="Projects"></nav>
   </div></header>
   <main><div class="wrap" id="main"></div></main>
 </section>
@@ -357,9 +388,14 @@ textarea.doc-body{min-height:220px}
 <section id="v-build" hidden>
   <header><div class="wrap">
     <div class="top"><button class="icon-btn" id="build-back" data-act="b-back" aria-label="Back to the list" hidden>‹</button><h1 id="build-title">Projects</h1></div>
-    <div class="seg" id="build-seg"></div>
   </div></header>
   <main><div class="wrap" id="build"></div></main>
+</section>
+
+<!-- Books -->
+<section id="v-books" hidden>
+  <header><div class="wrap"><div class="top"><button class="icon-btn" data-tab="more" aria-label="Back to More">‹</button><h1>Books</h1></div></div></header>
+  <main><div class="wrap" id="books"></div></main>
 </section>
 
 <!-- More -->
@@ -635,11 +671,11 @@ const fresh = () => ({
   days: {}, repeats: [], menus: JSON.parse(JSON.stringify(DEFAULT_MENUS)), tab: 'today',
   custom: [], workouts: [], docs: [], docCat: 'all', events: [],
   car: { vehicles: [], cur: null }, pm: [], biz: [], buildSeg: 'pm',
-  goals: [feGoal()]
+  goals: [feGoal()], books: [], fold: {}
 });
 let localVersion = { revision: null, owner: null, base: null, synced: null, attempt: null };
 let cloud = null;
-const deviceFields = ['current', 'showDone', 'tab', 'docCat', 'buildSeg'];
+const deviceFields = ['current', 'showDone', 'tab', 'docCat', 'buildSeg', 'fold'];
 function cloudData(state) {
   const data = { ...state, car: { ...state.car } };
   for (const key of deviceFields) delete data[key];
@@ -698,6 +734,9 @@ function save() {
   return true;
 }
 
+// note priority: pri 1 is high, -1 is low; high goes to the top of a list and low to the bottom
+const byPri = items => [...items].sort((a, b) => (b.pri || 0) - (a.pri || 0));
+const prioritiesProject = () => S.projects.find(p => /^priorit/i.test(p.name.trim()));
 function proj(id = S.current) { return S.projects.find(p => p.id === id) || S.projects[0]; }
 function findItem(id) {
   for (const p of S.projects) { const it = p.items.find(i => i.id === id); if (it) return { p, it }; }
@@ -707,6 +746,28 @@ function findItem(id) {
   }
   return {};
 }
+
+/* ---------- collapsible sections ---------- */
+// S.fold remembers which sections you collapsed (true) or opened (false); def is the state before you touch it
+const folded = (key, def = false) => S.fold[key] ?? def;
+function fold(key, head, body, { cls = '', def = false, sumCls = '' } = {}) {
+  return `<details class="fold ${cls}" data-fold="${esc(key)}" data-def="${def ? 1 : 0}"${folded(key, def) ? '' : ' open'}>`
+    + `<summary class="${sumCls}">${head}</summary>${body}</details>`;
+}
+// toggle doesn't bubble, so listen in the capture phase
+document.addEventListener('toggle', e => {
+  const d = e.target;
+  if (!d.matches?.('details[data-fold]')) return;
+  const key = d.dataset.fold, collapsed = !d.open;
+  if (folded(key, d.dataset.def === '1') === collapsed) return; // rendered this way, not a tap
+  S.fold[key] = collapsed;
+  // opening a notes project makes it the one quick add files into
+  if (key.startsWith('n:') && !collapsed && S.current !== key.slice(2)) {
+    S.fold['n:' + S.current] ??= false; // the previous project stays as it was on screen
+    S.current = key.slice(2); save(); return renderNotes();
+  }
+  save();
+}, true);
 
 function toast(msg) {
   const t = $('#toast'); t.textContent = msg; t.classList.add('show');
@@ -809,6 +870,46 @@ function linkedDays(noteId) {
   return out.sort();
 }
 
+/* ---------- quote of the day ---------- */
+const QUOTES = [
+  ['Whatever you do, work at it with all your heart, as working for the Lord, not for human masters.', 'Colossians 3:23'],
+  ['Commit to the Lord whatever you do, and he will establish your plans.', 'Proverbs 16:3'],
+  ['The heart of man plans his way, but the Lord establishes his steps.', 'Proverbs 16:9'],
+  ['This is the day that the Lord has made; let us rejoice and be glad in it.', 'Psalm 118:24'],
+  ['Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you wherever you go.', 'Joshua 1:9'],
+  ['Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.', 'Galatians 6:9'],
+  ['Trust in the Lord with all your heart and lean not on your own understanding.', 'Proverbs 3:5'],
+  ['Go to the ant, you sluggard; consider its ways and be wise!', 'Proverbs 6:6'],
+  ['I can do all this through him who gives me strength.', 'Philippians 4:13'],
+  ['Be still, and know that I am God.', 'Psalm 46:10'],
+  ['Pray as though everything depended on God. Work as though everything depended on you.', 'Attributed to St. Augustine'],
+  ['We are what we repeatedly do. Excellence, then, is not an act, but a habit.', 'Will Durant'],
+  ['The impediment to action advances action. What stands in the way becomes the way.', 'Marcus Aurelius'],
+  ['Waste no more time arguing about what a good man should be. Be one.', 'Marcus Aurelius'],
+  ['It is not that we have a short time to live, but that we waste a lot of it.', 'Seneca'],
+  ['First say to yourself what you would be; and then do what you have to do.', 'Epictetus'],
+  ['Well done is better than well said.', 'Benjamin Franklin'],
+  ['Lost time is never found again.', 'Benjamin Franklin'],
+  ['Do what you can, with what you have, where you are.', 'Theodore Roosevelt'],
+  ['A journey of a thousand miles begins with a single step.', 'Lao Tzu'],
+  ['Small deeds done are better than great deeds planned.', 'Peter Marshall'],
+  ['How we spend our days is, of course, how we spend our lives.', 'Annie Dillard'],
+  ['The best time to plant a tree was twenty years ago. The second best time is now.', 'Proverb'],
+  ['Plans are worthless, but planning is everything.', 'Dwight D. Eisenhower'],
+  ['You miss 100% of the shots you don’t take.', 'Wayne Gretzky'],
+  ['If you want to go fast, go alone. If you want to go far, go together.', 'Proverb'],
+  ['Measure twice, cut once.', 'Carpenter’s proverb'],
+  ['Simplicity is prerequisite for reliability.', 'Edsger W. Dijkstra'],
+  ['Scientists study the world as it is; engineers create the world that has never been.', 'Theodore von Kármán'],
+  ['The best way out is always through.', 'Robert Frost']
+];
+let quoteShift = 0;
+// one quote per day, the same all day; tapping it shows the next one
+function quoteHTML(k) {
+  const n = QUOTES.length, i = (((diffDays('2026-01-01', k) + quoteShift) % n) + n) % n, [q, who] = QUOTES[i];
+  return `<button class="quote" data-act="quote-next" aria-label="Quote of the day. Tap for another."><q>${esc(q)}</q><small>${esc(who)}</small></button>`;
+}
+
 /* ---------- render: today ---------- */
 function dayLabel(k) {
   const t = todayKey(), d = diffDays(t, k);
@@ -824,7 +925,7 @@ function renderToday() {
   const st = streak();
   $('#streak').textContent = st ? `${st}-day streak` : '';
 
-  let h = '';
+  let h = quoteHTML(k);
   const t0 = todayKey(), y = addDays(t0, -1);
   if (k === t0) {
     const ys = dayStats(y), planned = slotsFor(y).some(s => getSlot(y, s.key).task);
@@ -846,7 +947,7 @@ function renderToday() {
     const e = getSlot(k, s.key);
     const rep = e.repeat ? S.repeats.find(r => r.id === e.repeat) : repeatFor(k, s.key);
     let note = '';
-    if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : `From ${p.name}`; }
+    if (e.noteId) { const { p, it } = findItem(e.noteId); note = !p ? 'From notes' : e.subId ? `Step of “${it.text}” in ${p.name}` : p.virtual ? `Worktime on ${it.text}` : `From ${p.name}`; }
     else if (e.repeat && rep) note = rep.every === 1 ? 'Repeats every day' : rep.every % 7 === 0 ? `Repeats every ${rep.every === 7 ? 'week' : rep.every / 7 + ' weeks'}` : `Repeats every ${rep.every} days`;
     h += `<section class="slot${e.task && e.done ? ' is-done' : ''}">
       <div class="slot-main">
@@ -885,7 +986,7 @@ function renderToday() {
     const n = diffDays(t, occ.start);
     const when = n <= 0 ? `Now, until ${fmtDay(occ.end)}` : `${fmtRange(occ)} · ${n === 1 ? 'tomorrow' : `in ${n} days`}`;
     return `<button class="ev-row" data-act="ev-edit" data-ev="${ev.id}"><span>${esc(ev.title)}</span><span class="ev-when">${when}</span></button>`;
-  }).join('')}</div>` : `<p class="muted-p">Hunting trips, holidays, anything that takes the whole day.</p>`;
+  }).join('')}</div>` : '';
   h += `</div>`;
 
   // 28-day grid ending today
@@ -912,33 +1013,42 @@ function openPicker(k, slotKey) {
   $('#pick-rep').hidden = !!slot.extra;
 
   let h = '';
+  // every group in the picker can be collapsed; it remembers per group name
+  const group = (key, name, body) => fold('pk:' + key, `<h3>${name}</h3>`, `<div class="opts">${body}</div>`);
+  const noteOpts = (i, from) => {
+    let o = `<button class="opt${cur.noteId === i.id && !cur.subId ? ' cur' : ''}" data-act="pick-note" data-id="${i.id}">${esc(i.text)}${i.subs.length ? `<small>${i.subs.filter(x => !x.done).length} steps left${from ? ` · ${esc(from)}` : ''}</small>` : from ? `<small>${esc(from)}</small>` : ''}</button>`;
+    for (const sb of i.subs.filter(x => !x.done))
+      o += `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${i.id}" data-sub="${sb.id}">${esc(sb.text)}<small>Step of ${esc(i.text)}</small></button>`;
+    return o;
+  };
+  // Priorities first: everything in a notes project named Priorities, plus high-priority notes from any project
+  const priP = prioritiesProject(), pri = [];
+  for (const p of S.projects) for (const i of byPri(p.items.filter(i => !i.done)))
+    if (p === priP || i.pri > 0) pri.push(noteOpts(i, p === priP ? '' : p.name));
+  if (pri.length) h += group('priorities', 'Priorities', pri.join(''));
   if (S.custom.length) {
-    h += `<h3>Your tasks</h3><div class="opts">` + S.custom.map(t =>
-      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+    h += group('custom', 'Your tasks', S.custom.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join(''));
   }
-  for (const p of S.projects) {
-    const open = p.items.filter(i => !i.done);
-    if (!open.length) continue;
-    h += `<h3>${esc(p.name)} notes</h3><div class="opts">`;
-    for (const i of open.slice(0, 30)) {
-      h += `<button class="opt${cur.noteId === i.id && !cur.subId ? ' cur' : ''}" data-act="pick-note" data-id="${i.id}">${esc(i.text)}${i.subs.length ? `<small>${i.subs.filter(x => !x.done).length} steps left</small>` : ''}</button>`;
-      for (const sb of i.subs.filter(x => !x.done))
-        h += `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${i.id}" data-sub="${sb.id}">${esc(sb.text)}<small>Step of ${esc(i.text)}</small></button>`;
-    }
-    h += `</div>`;
-  }
+  // project worktime and the next steps of each active project or business
   for (const [kind, label] of [['pm', 'project'], ['biz', 'business']]) for (const x of S[kind]) {
     if (kind === 'pm' ? x.status !== 'active' : x.stage === 'paused') continue;
     const todo = x.subs.filter(s => !s.done).slice(0, 5);
-    if (!todo.length) continue;
-    h += `<h3>${esc(x.text)} (${label})</h3><div class="opts">` + todo.map(sb =>
-      `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${x.id}" data-sub="${sb.id}">${esc(sb.text)}</button>`).join('') + `</div>`;
+    const work = `Work on ${x.text} (1 hr)`;
+    h += group(kind + ':' + x.id, `${esc(x.text)} (${label})`,
+      `<button class="opt${cur.noteId === x.id && !cur.subId ? ' cur' : ''}" data-act="pick-work" data-id="${x.id}">${esc(work)}<small>Logs an update when you finish it</small></button>`
+      + todo.map(sb => `<button class="opt opt-sub${cur.subId === sb.id ? ' cur' : ''}" data-act="pick-sub" data-id="${x.id}" data-sub="${sb.id}">${esc(sb.text)}</button>`).join(''));
+  }
+  for (const p of S.projects) {
+    if (p === priP) continue;
+    const open = byPri(p.items.filter(i => !i.done && !(i.pri > 0)));
+    if (open.length) h += group('n:' + p.id, `${esc(p.name)} notes`, open.slice(0, 30).map(i => noteOpts(i)).join(''));
   }
   if (h) h += `<h3 class="lists-h">Standard task lists</h3>`;
   for (const cat of menuCats(slot.menu)) {
     if (!cat.tasks.length) continue;
-    h += `<h3>${esc(cat.name)}</h3><div class="opts">` + cat.tasks.map(t =>
-      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join('') + `</div>`;
+    h += group('cat:' + cat.name, esc(cat.name), cat.tasks.map(t =>
+      `<button class="opt${cur.task === t && !cur.noteId ? ' cur' : ''}" data-act="pick-task" data-task="${esc(t)}">${esc(t)}</button>`).join(''));
   }
   h += `<div class="pick-foot">`;
   if (cur.task) h += `<button class="btn ghost" data-act="pick-clear">Clear this day</button>`;
@@ -963,29 +1073,33 @@ function pickCustom(task) {
 
 /* ---------- render: notes ---------- */
 const CAL = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4M12 13.5v4M10 15.5h4"/></svg>`;
-function itemHTML(i) {
+function itemHTML(i, p) {
   const isOpen = open === i.id;
   const sd = i.subs.filter(s => s.done).length;
   let meta = '';
+  if (i.pri > 0 && !i.done) meta += `<span class="pri-hi">High priority</span>`;
+  else if (i.pri < 0 && !i.done) meta += `<span class="pri-lo">Low priority</span>`;
   if (i.subs.length) meta += `<span class="prog"><i style="width:${Math.round(sd / i.subs.length * 100)}%"></i></span><span>${sd}/${i.subs.length}</span>`;
   if (i.note && i.note.trim()) meta += `<span>Has notes</span>`;
   const days = linkedDays(i.id).filter(d => d >= todayKey());
   if (days.length && !i.done) meta += `<span class="on-day">Planned ${dayLabel(days[0]).toLowerCase() === 'today' ? 'today' : 'for ' + dayLabel(days[0])}</span>`;
-  return `<li class="item${i.done ? ' done' : ''}${isOpen ? ' open' : ''}" data-id="${i.id}">
+  return `<li class="item${i.done ? ' done' : ''}${isOpen ? ' open' : ''}${i.pri < 0 ? ' low' : ''}" data-id="${i.id}">
     <div class="row">
       <button class="check" data-act="toggle" aria-label="${i.done ? 'Mark not done' : 'Mark done'}"></button>
       <button class="open-btn" data-act="expand" aria-expanded="${isOpen}">
         <span class="t">${esc(i.text)}</span>${meta ? `<span class="meta">${meta}</span>` : ''}
       </button>
       ${i.done ? '' : `<button class="x plan-x row-plan" data-act="plan-note" aria-label="Put in daily three" title="Put in daily three">${CAL}</button>`}
-    </div>${isOpen ? detailHTML(i) : ''}</li>`;
+    </div>${isOpen ? detailHTML(i, p) : ''}</li>`;
 }
-function detailHTML(i) {
-  const here = proj().id;
+function detailHTML(i, p = proj()) {
+  const here = p.id;
   const opts = S.projects.map(p => `<option value="${p.id}"${p.id === here ? ' selected' : ''}>${esc(p.name)}</option>`).join('');
   return `<div class="detail">
     <input class="field title-in" data-edit="text" value="${esc(i.text)}" aria-label="Title">
     <textarea class="field" data-edit="note" placeholder="Notes" aria-label="Notes">${esc(i.note || '')}</textarea>
+    <div class="seg" role="group" aria-label="Priority">${[[1, 'High'], [0, 'Normal'], [-1, 'Low']].map(([v, n]) =>
+      `<button data-act="pri" data-v="${v}" aria-pressed="${(i.pri || 0) === v}" aria-label="${n} priority">${n}</button>`).join('')}</div>
     <ul class="subs">${i.subs.map(s => `
       <li class="sub${s.done ? ' done' : ''}" data-sub="${s.id}">
         <button class="check sm" data-act="sub-toggle" aria-label="${s.done ? 'Mark subtask not done' : 'Mark subtask done'}"></button>
@@ -1005,26 +1119,28 @@ function detailHTML(i) {
     </div>
   </div>`;
 }
+// every notes project is a collapsible section; the open one you touched last is where quick add files new notes
 function renderNotes() {
-  const p = proj(); S.current = p.id;
-  $('#title').textContent = p.name;
-  $('#q').placeholder = `Add to ${p.name}`;
-  $('#chips').innerHTML = S.projects.map(x => {
-    const n = x.items.filter(i => !i.done).length;
-    return `<button class="chip" data-proj="${x.id}" aria-pressed="${x.id === p.id}">${esc(x.name)}${n ? `<span class="n">${n}</span>` : ''}</button>`;
-  }).join('') + `<button class="chip add" data-act="new-project">+ Project</button>`;
-  const todo = p.items.filter(i => !i.done), done = p.items.filter(i => i.done);
+  const cur = proj(); S.current = cur.id;
+  $('#q').placeholder = `Add to ${cur.name}`;
   let h = '';
-  if (!p.items.length) h = `<p class="empty">Nothing in ${esc(p.name)} yet.<br>Type below and press Enter to add a note.</p>`;
-  else {
-    h += todo.length ? `<ul class="list">${todo.map(itemHTML).join('')}</ul>` : `<p class="empty small">Everything here is done.</p>`;
-    if (done.length) {
-      h += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
-      if (S.showDone) h += `<ul class="list">${done.map(itemHTML).join('')}</ul><button class="clear-done" data-act="clear-done">Clear done items</button>`;
+  for (const p of S.projects) {
+    const todo = byPri(p.items.filter(i => !i.done)), done = p.items.filter(i => i.done);
+    const isCur = p.id === cur.id;
+    let body = '';
+    if (!p.items.length) body = `<p class="muted-p">Nothing here yet. ${isCur ? 'Type below and press Enter to add a note.' : 'Open this one and type below to add to it.'}</p>`;
+    else {
+      body += todo.length ? `<ul class="list">${todo.map(i => itemHTML(i, p)).join('')}</ul>` : `<p class="muted-p">Everything here is done.</p>`;
+      if (done.length) {
+        body += `<button class="section-toggle" data-act="toggle-done" aria-expanded="${!!S.showDone}">${S.showDone ? 'Hide' : 'Show'} ${done.length} done</button>`;
+        if (S.showDone) body += `<ul class="list">${done.map(i => itemHTML(i, p)).join('')}</ul><button class="clear-done" data-act="clear-done" data-pid="${p.id}">Clear done items</button>`;
+      }
     }
+    h += fold('n:' + p.id, `<span class="grow">${esc(p.name)}${todo.length ? ` <span class="n">· ${todo.length}</span>` : ''}</span>${isCur ? '<span class="tag">Adding here</span>' : ''}`,
+      `<div class="fold-body">${body}</div>`, { cls: 'proj-fold', def: !isCur });
   }
+  h += `<button class="add-slot" data-act="new-project">+ Project</button>`;
   $('#main').innerHTML = h;
-  $('.chip[aria-pressed="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest' });
 }
 
 function renderOrder() {
@@ -1267,15 +1383,16 @@ function renderDocs() {
 
 const VIEWS = {
   today: { el: '#v-today', render: () => renderToday(), title: () => 'Daily three' },
-  notes: { el: '#v-notes', render: () => renderNotes(), title: () => proj().name },
+  notes: { el: '#v-notes', render: () => renderNotes(), title: () => 'Notes' },
   work: { el: '#v-work', render: () => renderWork(), title: () => 'Workouts' },
   goals: { el: '#v-goals', render: () => renderGoals(), title: () => 'Goals' },
   docs: { el: '#v-docs', render: () => renderDocs(), title: () => 'Standards' },
-  build: { el: '#v-build', render: () => renderBuild(), title: () => S.buildSeg === 'biz' ? 'Businesses' : 'Projects' },
+  build: { el: '#v-build', render: () => renderBuild(), title: () => 'Projects' },
   more: { el: '#v-more', render: () => renderMore(), title: () => 'More' },
-  car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' }
+  car: { el: '#v-car', render: () => renderCar(), title: () => 'Car' },
+  books: { el: '#v-books', render: () => renderBooks(), title: () => 'Books' }
 };
-const MORE_TABS = ['more', 'work', 'docs', 'car'];
+const MORE_TABS = ['more', 'work', 'docs', 'car', 'books'];
 function renderAll() {
   if (!VIEWS[S.tab]) S.tab = 'today';
   for (const [k, v] of Object.entries(VIEWS)) $(v.el).hidden = k !== S.tab;
@@ -1298,7 +1415,8 @@ $('#quick').addEventListener('submit', e => {
     if (hit) { target = hit; text = (text.slice(0, m.index) + ' ' + text.slice(m.index + m[0].length)).replace(/\s+/g, ' ').trim(); }
   }
   if (!text) return;
-  target.items.unshift({ id: uid(), text, note: '', done: false, subs: [], created: Date.now() });
+  const { title, note } = autoTitle(text, true);
+  target.items.unshift({ id: uid(), text: title, note, done: false, subs: [], created: Date.now() });
   q.value = ''; save(); renderNotes();
   if (target.id !== S.current) toast(`Added to ${target.name}`);
   q.focus();
@@ -1375,6 +1493,7 @@ document.addEventListener('click', async e => {
 
   switch (b.dataset.act) {
     /* daily */
+    case 'quote-next': quoteShift++; renderToday(); break;
     case 'day-prev': viewDay = addDays(viewDay, -1); renderToday(); break;
     case 'day-next': viewDay = addDays(viewDay, 1); renderToday(); break;
     case 'goto': if (viewDay === addDays(todayKey(), -1) && b.dataset.day === todayKey()) { (S.days[viewDay] ??= {})._reviewed = true; save(); }
@@ -1387,16 +1506,28 @@ document.addEventListener('click', async e => {
       if (cur.subId) entry.subId = cur.subId;
       if (cur.repeat) entry.repeat = cur.repeat;
       setSlot(viewDay, b.dataset.slot, entry);
+      let msg = '';
       if (entry.noteId) {
         const f = findItem(entry.noteId);
-        if (f.it && entry.subId) { const sb = f.it.subs.find(x => x.id === entry.subId); if (sb) sb.done = entry.done; }
-        else if (f.it && !f.p.virtual) { f.it.done = entry.done; f.it.doneAt = entry.done ? Date.now() : null; }
+        if (f.it && entry.subId) { const sb = f.it.subs.find(x => x.id === entry.subId); if (sb) sb.done = entry.done; msg = 'Step checked off in your notes'; }
+        else if (f.it && !f.p.virtual) { f.it.done = entry.done; f.it.doneAt = entry.done ? Date.now() : null; msg = 'Note checked off too'; }
+        else if (f.it) {
+          // project worktime: finishing it logs an update on the project; unchecking takes it back
+          f.it.log = (f.it.log || []).filter(l => l.id !== cur.logId);
+          if (entry.done) {
+            entry.logId = uid();
+            const dur = entry.task.match(/\(([^)]+)\)$/)?.[1];
+            f.it.log.unshift({ id: entry.logId, date: viewDay, text: `Worked ${dur || 'on it'} (daily three)` });
+            f.it.updated = Date.now(); msg = `Logged in ${f.it.text} updates`;
+          }
+        }
       }
       save(); renderToday();
-      if (entry.noteId && entry.done) toast(entry.subId ? 'Step checked off in your notes' : 'Note checked off too');
+      if (entry.done && msg) toast(msg);
       break;
     }
     case 'pick-note': { const f = findItem(b.dataset.id); if (f.it) applyPick(f.it.text, f.it.id); break; }
+    case 'pick-work': { const f = findItem(b.dataset.id); if (f.it) applyPick(`Work on ${f.it.text} (1 hr)`, f.it.id); break; }
     case 'pick-sub': {
       const f = findItem(b.dataset.id), sb = f.it?.subs.find(x => x.id === b.dataset.sub);
       if (sb) applyPick(sb.text, f.it.id, sb.id);
@@ -1473,8 +1604,9 @@ document.addEventListener('click', async e => {
       }
       break;
     case 'toggle-done': S.showDone = !S.showDone; save(); renderNotes(); break;
+    case 'pri': it.pri = +b.dataset.v || undefined; save(); renderNotes(); break;
     case 'clear-done': {
-      const cp = proj(), n = cp.items.filter(i => i.done).length;
+      const cp = proj(b.dataset.pid), n = cp.items.filter(i => i.done).length;
       if (await ask({ title: `Clear ${n} done item${n > 1 ? 's' : ''}?`, body: 'They will be removed from this project.', ok: 'Clear', danger: true })) {
         cp.items = cp.items.filter(i => !i.done); save(); renderNotes();
       }
@@ -1482,7 +1614,7 @@ document.addEventListener('click', async e => {
     }
     case 'new-project': {
       const name = await ask({ title: 'New project', input: '', placeholder: 'Project name', ok: 'Create' });
-      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; open = null; save(); renderNotes(); }
+      if (name) { const np = { id: uid(), name, items: [] }; S.projects.push(np); S.current = np.id; S.fold['n:' + np.id] = false; open = null; save(); renderNotes(); }
       break;
     }
     case 'menu': {
@@ -2064,10 +2196,56 @@ function renderMore() {
   const row = (tab, name, sub, cls = '') => `<button class="hub-row" data-tab="${tab}"><span class="lr-main"><b>${name}</b><small class="${cls}">${esc(sub)}</small></span><span class="chev">›</span></button>`;
   $('#more').innerHTML = row('work', 'Workouts', wk ? `${plural(wk, 'workout')} this week` : 'Nothing logged this week')
     + row('docs', 'Standards', S.docs.length ? `${S.docs.length} saved: workouts, recipes, lists` : 'Workouts, recipes, grocery lists')
+    + row('books', 'Books', bookSummary())
     + row('car', 'Car', !curCar() ? 'Track and predict maintenance and inspections' : al.length ? `${al[0].it.name}: ${dueText(al[0].d).toLowerCase()}` : 'Nothing due in the next 30 days',
           al.length ? (al[0].d.state === 'over' ? 'due-over' : 'due-soon') : '')
     + `<h3 class="day-h">Backup</h3><div class="btn-row"><button class="pill" data-act="m-cloud">Cloud backup</button><span id="cloud-summary" class="muted-p" role="status"></span><button class="pill" data-act="m-export">Export backup</button><button class="pill" data-act="m-import">Import backup</button></div>`;
   cloud?.refreshUI();
+}
+
+/* ---------- books ---------- */
+const BOOK_ST = { reading: 'Reading now', want: 'To read', done: 'Finished' };
+function bookSummary() {
+  const r = S.books.filter(b => b.status === 'reading'), w = S.books.filter(b => b.status === 'want').length;
+  if (!S.books.length) return 'A list of books to read';
+  return [r.length ? `Reading ${r[0].title}${r.length > 1 ? ` and ${r.length - 1} more` : ''}` : '', w ? `${w} to read` : ''].filter(Boolean).join(' · ') || `${plural(S.books.length, 'book')} finished`;
+}
+function bookRow(b) {
+  const sub = [b.author, b.status === 'done' && b.finished ? `finished ${fmtDate(b.finished)}` : '', b.note].filter(Boolean).join(' · ');
+  const next = b.status === 'want' ? 'Start' : b.status === 'reading' ? 'Finish' : '';
+  return `<div class="book-row">
+    <button class="lrow" data-act="k-edit" data-id="${b.id}"><span class="lr-main"><b>${esc(b.title)}</b>${sub ? `<small>${esc(sub)}</small>` : ''}</span></button>
+    ${next ? `<button class="soft-btn" data-act="k-next" data-id="${b.id}">${next}</button>` : ''}</div>`;
+}
+function renderBooks() {
+  let h = '';
+  for (const [st, name] of Object.entries(BOOK_ST)) {
+    // to-read keeps the order you added them; finished shows the latest first
+    let list = S.books.filter(b => b.status === st);
+    if (st === 'done') list = list.sort((a, b) => (b.finished || '').localeCompare(a.finished || ''));
+    if (list.length) h += fold('bk:' + st, `${name} · ${list.length}`, `<div class="card book-list">${list.map(bookRow).join('')}</div>`, { sumCls: 'day-h', def: st === 'done' });
+  }
+  if (!S.books.length) h = `<p class="empty small">Keep the books you want to read here, move them to Reading now when you start, and keep a record of what you’ve finished.</p>`;
+  $('#books').innerHTML = h + `<button class="add-slot" data-act="k-new">+ Add a book</button>`;
+}
+async function bookClick(act, el) {
+  const b = S.books.find(x => x.id === el.dataset.id);
+  if (act === 'k-next' && b) {
+    if (b.status === 'want') { b.status = 'reading'; b.started = todayKey(); toast(`Started ${b.title}`); }
+    else { b.status = 'done'; b.finished = todayKey(); toast(`Finished ${b.title}`); }
+  } else if (act === 'k-new' || (act === 'k-edit' && b)) {
+    const r = await form({ title: b ? 'Edit book' : 'Add a book', ok: b ? 'Save' : 'Add', del: !!b, values: b || { status: 'want' }, fields: [
+      { key: 'title', label: 'Title' }, { key: 'author', label: 'Author', ph: 'Optional' },
+      { key: 'status', label: 'Status', type: 'select', options: Object.entries(BOOK_ST) },
+      { key: 'note', label: 'Notes', type: 'area', ph: 'Who recommended it, why, thoughts' }] });
+    if (!r) return;
+    if (r === 'delete') { S.books = S.books.filter(x => x !== b); save(); renderBooks(); return toast('Book removed'); }
+    if (!r.title) return toast('Give the book a title');
+    if (r.status === 'done' && b?.status !== 'done') r.finished = todayKey();
+    if (r.status === 'reading' && b?.status !== 'reading') r.started = todayKey();
+    if (b) Object.assign(b, r); else S.books.push({ id: uid(), added: Date.now(), ...r });
+  } else return;
+  save(); renderBooks();
 }
 
 /* ---------- projects and businesses ---------- */
@@ -2143,7 +2321,7 @@ function pmList() {
   let h = '';
   for (const [st, name] of Object.entries(PM_STATUS)) {
     const ps = S.pm.filter(p => p.status === st);
-    if (ps.length) h += `<h3 class="day-h">${name} · ${ps.length}</h3>` + ps.map(pmCard).join('');
+    if (ps.length) h += fold('pm:' + st, `${name} · ${ps.length}`, ps.map(pmCard).join(''), { sumCls: 'day-h', def: st === 'done' });
   }
   if (!S.pm.length) h = `<p class="empty small">Notes hold the ideas. This is where the ones you’ve started live, each with its steps, target date, costs and a running log.</p>`;
   const bl = backlog(), n = bl ? bl.items.filter(i => !i.done).length : 0;
@@ -2173,14 +2351,19 @@ function pmDetail(p) {
     <div class="card"><h2>Notes</h2><textarea class="field" data-bedit="note" placeholder="Links, part numbers, measurements, ideas" aria-label="Notes">${esc(p.note || '')}</textarea></div>
     <div class="actions"><span></span><button class="danger-btn" data-act="b-del">Delete project</button></div>`;
 }
+function bizCard(e) {
+  const { inc, out } = bizMoney(e), next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid').length;
+  const bits = [next ? `Next: ${next.text}` : '', open ? `${plural(open, bizLabel(e, 'orders').toLowerCase().replace(/s$/, ''))} open` : '', inc || out ? `${usd(inc - out)} profit so far` : ''].filter(Boolean);
+  return `<button class="card pcard" data-act="b-open" data-kind="biz" data-id="${e.id}">
+    <span class="goal-top"><b class="pc-name">${esc(e.text)}</b><span class="tag${e.stage === 'paused' ? ' grey' : ''}">${BIZ_STAGES[e.stage] || ''}</span></span>
+    <span class="gs-sub">${esc(BIZ_TYPES[e.type]?.label || '')}</span>${bits.length ? `<span class="gs-sub">${esc(bits.join(' · '))}</span>` : ''}</button>`;
+}
 function bizList() {
-  let h = S.biz.map(e => {
-    const { inc, out } = bizMoney(e), next = e.subs.find(s => !s.done), open = e.orders.filter(o => o.status !== 'paid').length;
-    const bits = [next ? `Next: ${next.text}` : '', open ? `${plural(open, bizLabel(e, 'orders').toLowerCase().replace(/s$/, ''))} open` : '', inc || out ? `${usd(inc - out)} profit so far` : ''].filter(Boolean);
-    return `<button class="card pcard" data-act="b-open" data-kind="biz" data-id="${e.id}">
-      <span class="goal-top"><b class="pc-name">${esc(e.text)}</b><span class="tag${e.stage === 'paused' ? ' grey' : ''}">${BIZ_STAGES[e.stage] || ''}</span></span>
-      <span class="gs-sub">${esc(BIZ_TYPES[e.type]?.label || '')}</span>${bits.length ? `<span class="gs-sub">${esc(bits.join(' · '))}</span>` : ''}</button>`;
-  }).join('');
+  let h = '';
+  for (const [st, name] of Object.entries(BIZ_STAGES)) {
+    const es = S.biz.filter(e => (BIZ_STAGES[e.stage] ? e.stage : 'idea') === st);
+    if (es.length) h += fold('bz:' + st, `${name} · ${es.length}`, es.map(bizCard).join(''), { sumCls: 'day-h', def: st === 'paused' });
+  }
   if (!S.biz.length) h = `<p class="empty small">Each business gets its own launch roadmap, products or services, orders, money in and out, equipment list and research notes. You choose which sections it needs when you set it up.</p>`;
   return h + `<button class="add-slot" data-act="b-new-biz">+ New business</button>`;
 }
@@ -2247,13 +2430,13 @@ function bizDetail(e) {
 function renderBuild() {
   let e = buildEnt();
   if (openBuild && !e) openBuild = null;
-  const seg = S.buildSeg === 'biz' ? 'biz' : 'pm';
   $('#build-back').hidden = !e;
-  $('#build-title').textContent = e ? e.text : seg === 'pm' ? 'Projects' : 'Businesses';
-  $('#build-seg').hidden = !!e;
-  $('#build-seg').innerHTML = [['pm', 'Projects', S.pm.filter(p => p.status === 'active').length], ['biz', 'Businesses', S.biz.length]].map(([k, n, c]) =>
-    `<button data-act="b-seg" data-v="${k}" aria-pressed="${k === seg}">${n}${c ? ` · ${c}` : ''}</button>`).join('');
-  $('#build').innerHTML = e ? (openBuild.kind === 'pm' ? pmDetail(e) : bizDetail(e)) : seg === 'pm' ? pmList() : bizList();
+  $('#build-title').textContent = e ? e.text : 'Projects';
+  // projects and businesses share one page, each a collapsible section
+  const active = S.pm.filter(p => p.status === 'active').length;
+  $('#build').innerHTML = e ? (openBuild.kind === 'pm' ? pmDetail(e) : bizDetail(e))
+    : fold('b:pm', `<span class="grow">Projects</span>${active ? `<small>${active} active</small>` : ''}`, pmList(), { cls: 'big-fold' })
+    + fold('b:biz', `<span class="grow">Businesses</span>${S.biz.length ? `<small>${S.biz.length}</small>` : ''}`, bizList(), { cls: 'big-fold' });
   document.title = `${e ? e.text : VIEWS.build.title()} · Jot`;
 }
 function showBuild(kind, id) {
@@ -2363,8 +2546,9 @@ async function buildClick(act, b) {
 $('#build').addEventListener('input', ev => {
   const el = ev.target, k = el.dataset.bedit, e = buildEnt();
   if (!k || !e || el.type === 'date') return;
-  const v = el.value, relink = (match, text) => { for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s && match(s)) s.task = text; };
-  if (k === 'text') { if (!v.trim()) return; e.text = v.trim(); $('#build-title').textContent = e.text; relink(s => s.noteId === e.id && !s.subId, e.text); }
+  const v = el.value, relink = (match, text) => { for (const d of Object.values(S.days)) for (const s of Object.values(d)) if (s && match(s)) s.task = typeof text === 'function' ? text(s.task) : text; };
+  if (k === 'text') { if (!v.trim()) return; e.text = v.trim(); $('#build-title').textContent = e.text;
+    relink(s => s.noteId === e.id && !s.subId, t => { const m = t.match(/^Work on .+ (\([^)]+\))$/); return m ? `Work on ${e.text} ${m[1]}` : e.text; }); }
   else if (k === 'sub') { const s = e.subs.find(x => x.id === el.closest('.sub').dataset.sub); if (!s || !v.trim()) return; s.text = v.trim(); relink(x => x.subId === s.id, s.text); }
   else if (k === 'budget') e.budget = Math.max(0, +v || 0);
   else if (k === 'doc-title' || k === 'doc-body') {
@@ -2399,17 +2583,30 @@ $('#build').addEventListener('keydown', ev => {
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null, voiceBase = '';
 const capFirst = s => s.charAt(0).toUpperCase() + s.slice(1);
-// short dictation is the title; long dictation gets a title from its first clause and keeps the full text as the note
-function autoTitle(raw) {
-  const text = raw.replace(/\s+/g, ' ').trim();
-  if (text.split(' ').length <= 9) return { title: capFirst(text.replace(/[.!?]+$/, '')), note: '' };
-  const s = text.replace(/^((ok(ay)?|so|um+|uh+|hey|well|alright|and|yeah)[,.]?\s+)+/i, '')
-    .replace(/^(note to self[,:]?|remind me (to|that)|remember to|don'?t forget to|i (need|want|have|should|would like) to|i should|i need|make sure (to|i)|i was thinking( that| about)?|i'?m thinking( that| about)?|idea[:,]?)\s+/i, '');
-  let w = s.split(/[.!?]\s|[,;:]\s|\s(?:because|so that|so i|and then|which|but)\s/i)[0].split(' ');
-  if (w.length < 3) w = s.split(' ');
-  w = w.slice(0, 8);
-  while (w.length > 3 && /^(and|or|the|a|an|to|of|for|with|in|on|at|that|is|my|i|so|from|into|like|where|when|can|could|it|this)$/i.test(w.at(-1))) w.pop();
-  return { title: capFirst(w.join(' ').replace(/[.,!?;:]+$/, '')), note: capFirst(text) };
+// titles are short and punchy: filler and lead-ins are dropped and the first clause is cut to about five key words.
+// Anything longer than the title keeps its full text as the note.
+const TITLE_WORDS = 5;
+const LEAD_FILLER = /^((ok(ay)?|so|um+|uh+|hey|well|alright|and|yeah|also|basically|actually|just|like)[,.]?\s+)+/i;
+const LEAD_IN = /^(note to self[,:]?|reminder[,:]?|remind me (to|that)|remember to|don'?t forget (to|that)|i (really )?(need|want|have|should|would like|gotta|got) to|i should|i need|we (need|should|have) to|need to|have to|gotta|make sure (to|i|that)|i (was|am|'?m) thinking( that| about)?|i think( that)?|idea[:,]?|maybe|probably)\s+/i;
+const DROP_WORDS = /^(the|a|an|some|really|just|actually|basically|maybe|probably|very|definitely|literally|kinda|sorta|gonna|um+|uh+)$/i;
+const TAIL_WORDS = /^(and|or|the|a|an|to|of|for|with|in|on|at|that|is|my|i|so|from|into|like|where|when|can|could|it|this|about|by|but|if|then)$/i;
+function punchyTitle(text) {
+  let s = text;
+  for (let n = 0; n < 3; n++) s = s.replace(LEAD_FILLER, '').replace(LEAD_IN, '');
+  let w = s.split(/[.!?]\s|[,;:]\s|\s(?:because|so that|so i|and then|which|but|since)\s/i)[0].split(' ');
+  if (w.length < 2) w = s.split(' ');
+  const kept = w.filter(x => !DROP_WORDS.test(x.replace(/[^\w']/g, '')));
+  if (kept.length) w = kept;
+  w = w.slice(0, TITLE_WORDS);
+  while (w.length > 2 && TAIL_WORDS.test(w.at(-1).replace(/[^\w']/g, ''))) w.pop();
+  return capFirst(w.join(' ').replace(/[.,!?;:]+$/, '')) || capFirst(text);
+}
+// voice notes always get a punchy title; typed notes only once they run past a short title's length
+function autoTitle(raw, typed = false) {
+  const text = raw.replace(/\s+/g, ' ').trim(), words = text.split(' ').length;
+  if (typed && words <= TITLE_WORDS + 2) return { title: text, note: '' };
+  const title = punchyTitle(text);
+  return { title, note: words > TITLE_WORDS ? capFirst(text) : '' };
 }
 function voiceText(v) {
   if (v !== undefined) $('#voice-text').value = v;
@@ -2503,6 +2700,7 @@ document.addEventListener('click', ev => {
   const b = ev.target.closest('[data-act]'); if (!b) return;
   const act = b.dataset.act, pre = act.slice(0, 2);
   if (pre === 'c-') carClick(act, b);
+  else if (pre === 'k-') bookClick(act, b);
   else if (pre === 'b-') buildClick(act, b);
   else if (pre === 'v-') voiceClick(act);
   else if (act === 'm-cloud') cloud?.open();
