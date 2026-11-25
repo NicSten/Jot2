@@ -258,7 +258,13 @@
   cloud = {
     open() { refreshUI(); dialog.showModal(); },
     refreshUI,
-    changed() { if (!running) message = ''; refreshUI(); schedule(); }
+    changed() { if (!running) message = ''; refreshUI(); schedule(); },
+    // for notifications: who is signed in, and signed requests to the same Supabase project
+    info() { return session && { url: session.url, uid: session.uid }; },
+    async call(path, options = {}) {
+      if (!session) throw new Error('Sign in to cloud backup first.');
+      return request(session, path, { ...options, token: await accessToken() });
+    }
   };
   window.addEventListener('online', () => { message = ''; refreshUI(); schedule(0); });
   window.addEventListener('offline', () => { message = ''; refreshUI(); schedule(); });

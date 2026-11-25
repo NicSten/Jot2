@@ -19,6 +19,16 @@ Jot saves on the device immediately and syncs shortly after edits while it’s o
 
 To update an existing installation, publish at the same web address to keep the existing device data. If you move to a different address, export the data from the old address and import it on the new one.
 
+## Enable notifications
+Jot can remind you about scheduled items in your flow of the day, nudge you in the morning to pick your Daily 3, and check in in the evening if it isn't done. The reminders are sent by a small function on your Supabase project, so cloud backup needs to be on first.
+
+1. In Jot, open **More → Notifications** and tap **Copy setup SQL**. In Supabase, open **SQL Editor**, paste it into a new query and press **Run**. (The file is `supabase/push-setup.sql`; Jot fills in your project address.)
+2. Tap **Copy function code**. In Supabase, open **Edge Functions → Deploy a new function → Via Editor**, name it `jot-push`, replace the sample code with it and deploy. (The file is `supabase/functions/jot-push/index.ts`.)
+3. In that function's settings, turn off JWT verification and save. The every-minute check proves itself with its own secret instead.
+4. Back in Jot, tap **Turn on for this device**, allow notifications and tap **Send a test**. The test also tells you whether the every-minute check is running. Repeat this step on each device you want reminders on.
+
+Choose what you're reminded about and when on the same screen. Reminders are worked out from your cloud backup, so changes reach them once Jot syncs, and they can arrive a minute or two late. On iPhone, add Jot to the Home Screen and open it from there first (iOS 16.4 or later). If you change `jot-push/index.ts`, deploy the new code to the function again.
+
 ## Moving your data over
 Data doesn't follow between the Claude artifact and this installed version (or the old Daily Three app).
 In the artifact: ⋯ → Export backup. In the installed app: ⋯ → Import backup and pick that file.
