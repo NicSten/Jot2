@@ -35,7 +35,7 @@ In the artifact: ⋯ → Export backup. In the installed app: ⋯ → Import bac
 - **All-day events** (Daily → Events → + Event, or ⋯): hunting trips, holidays, travel. "Pause daily tasks" makes it a day off that doesn't break your streak (you can still plan tasks anyway). "Repeats every year" for holidays.
 - **Goals**: each goal has a date countdown and any mix of trackers (Edit → + Add a tracker): Checklist (topics/milestones), Count (problems, chapters), Score (practice exams vs. a passing mark), Consistency (days a week, tap the day dots) and Time (hours). The first tracker with progress also shows on the Daily tab.
 - **Standards**: workouts, recipes, grocery lists. Switch a doc to Checklist for things like groceries, then "Uncheck all" to reuse it.
-- Notes → ⋯ → Reorder projects changes the order of the project sections. Each notes project is a collapsible section; opening one makes it where quick add files new notes (marked **Adding here**).
+- Notes → ⋯ → Reorder projects changes the order of the project chips.
 - Open a note to set its priority: **High** moves it to the top of its list, **Low** sends it to the bottom.
 - Make a notes project called **Priorities**: everything in it, plus any high-priority note, shows first in the day planner (the picker when you tap a daily slot).
 - Each active project or business has a **Work on … (1 hr)** option in the day planner. Finishing it logs an update on that project.
